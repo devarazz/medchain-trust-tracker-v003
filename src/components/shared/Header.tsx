@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Bell, LogOut, Menu, User } from 'lucide-react';
+import { Bell, LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -20,17 +20,13 @@ import {
   SheetContent, 
   SheetTrigger 
 } from '@/components/ui/sheet';
-import { cn } from '@/lib/utils';
+import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 
-interface HeaderProps {
-  setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  sidebarOpen: boolean;
-}
-
-const Header: React.FC<HeaderProps> = ({ setSidebarOpen, sidebarOpen }) => {
+const Header: React.FC = () => {
   const { user, logout } = useAuth();
   const { batchNotifications } = useBatch();
   const [notificationsOpen, setNotificationsOpen] = React.useState(false);
+  const { state } = useSidebar();
   
   const unreadNotifications = batchNotifications.filter(n => !n.read).length;
   
@@ -46,20 +42,9 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, sidebarOpen }) => {
   const roleDisplay = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : '';
 
   return (
-    <header className={cn(
-      "sticky top-0 z-30 flex items-center justify-between h-16 px-4 border-b backdrop-blur-sm bg-white/80",
-      sidebarOpen ? "lg:pl-64" : "lg:pl-20",
-      "transition-all duration-300"
-    )}>
+    <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-4 border-b backdrop-blur-sm bg-white/80">
       <div className="flex items-center gap-2">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="lg:hidden"
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
+        <SidebarTrigger />
         <div className="hidden md:block">
           <h1 className="text-xl font-semibold">MedChain</h1>
           <p className="text-xs text-muted-foreground">{roleDisplay} Dashboard</p>
