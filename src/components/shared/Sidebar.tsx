@@ -22,9 +22,11 @@ import { Button } from '@/components/ui/button';
 interface SidebarProps {
   sidebarOpen: boolean;
   setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  activeTab?: string;
+  setActiveTab?: React.Dispatch<React.SetStateAction<string>>;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
+const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab }) => {
   const { user } = useAuth();
   
   if (!user) return null;
@@ -45,24 +47,35 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
   // Add role-specific menu items
   if (user.role === 'manufacturer') {
     menuItems.push(
-      { label: 'Register Batch', icon: <FileText className="h-5 w-5" />, id: 'register-batch' },
-      { label: 'Manage Batch', icon: <BarChart className="h-5 w-5" />, id: 'manage-batch' },
-      { label: 'Verify Tracking', icon: <Shield className="h-5 w-5" />, id: 'verify-tracking' }
+      { label: 'Register Batch', icon: <FileText className="h-5 w-5" />, id: 'register' },
+      { label: 'Manage Batch', icon: <BarChart className="h-5 w-5" />, id: 'manage' },
+      { label: 'Verify Tracking', icon: <Shield className="h-5 w-5" />, id: 'verify' }
     );
   } else if (user.role === 'consumer') {
     menuItems.push(
-      { label: 'Track Batch', icon: <Search className="h-5 w-5" />, id: 'track-batch' },
+      { label: 'Track Batch', icon: <Search className="h-5 w-5" />, id: 'track' },
       { label: 'Certificate', icon: <BookOpen className="h-5 w-5" />, id: 'certificate' }
     );
   } else {
     // For wholesaler, distributor, retailer
     menuItems.push(
-      { label: 'Verify Batch', icon: <Shield className="h-5 w-5" />, id: 'verify-batch' },
-      { label: 'Sign Batch', icon: <FileText className="h-5 w-5" />, id: 'sign-batch' },
-      { label: 'Manage Batch', icon: <BarChart className="h-5 w-5" />, id: 'manage-batch' },
-      { label: 'Report Fake', icon: <ClipboardCheck className="h-5 w-5" />, id: 'report-fake' }
+      { label: 'Verify Batch', icon: <Shield className="h-5 w-5" />, id: 'verify' },
+      { label: 'Sign Batch', icon: <FileText className="h-5 w-5" />, id: 'sign' },
+      { label: 'Manage Batch', icon: <BarChart className="h-5 w-5" />, id: 'manage' },
+      { label: 'Report Fake', icon: <ClipboardCheck className="h-5 w-5" />, id: 'report' }
     );
   }
+
+  const handleMenuClick = (id: string) => {
+    if (setActiveTab) {
+      setActiveTab(id);
+    }
+    
+    // On mobile, close the sidebar after selection
+    if (window.innerWidth < 1024) {
+      setSidebarOpen(false);
+    }
+  };
 
   return (
     <>
@@ -115,18 +128,20 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen }) => {
         <div className="py-4">
           <nav className="space-y-1 px-2">
             {menuItems.map((item) => (
-              <a
+              <button
                 key={item.id}
-                href={`#${item.id}`}
                 className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                  "text-gray-700 hover:bg-primary/10 hover:text-primary",
+                  "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                  activeTab === item.id 
+                    ? "bg-primary/10 text-primary" 
+                    : "text-gray-700 hover:bg-primary/10 hover:text-primary",
                   !sidebarOpen && "lg:justify-center"
                 )}
+                onClick={() => handleMenuClick(item.id)}
               >
                 {item.icon}
                 <span className={cn("", !sidebarOpen && "lg:hidden")}>{item.label}</span>
-              </a>
+              </button>
             ))}
           </nav>
         </div>

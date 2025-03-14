@@ -1,13 +1,22 @@
 
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import VerifyBatchForm from '@/components/shared/VerifyBatchForm';
 import BatchList from '@/components/batch/BatchList';
 import { useBatch } from '@/contexts/BatchContext';
 
-const DistributorDashboard: React.FC = () => {
+interface DistributorDashboardProps {
+  activeTab?: string;
+}
+
+const DistributorDashboard: React.FC<DistributorDashboardProps> = ({ activeTab = 'dashboard' }) => {
   const { batches, verifiedBatches } = useBatch();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [localActiveTab, setLocalActiveTab] = React.useState(activeTab);
+  
+  // Sync with parent activeTab when it changes
+  useEffect(() => {
+    setLocalActiveTab(activeTab);
+  }, [activeTab]);
   
   // Batches that have been signed by this role
   const signedBatches = batches.filter(batch => 
@@ -23,7 +32,7 @@ const DistributorDashboard: React.FC = () => {
         </p>
       </div>
       
-      <Tabs defaultValue="dashboard" value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={localActiveTab} onValueChange={setLocalActiveTab}>
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="verify">Verify Batch</TabsTrigger>

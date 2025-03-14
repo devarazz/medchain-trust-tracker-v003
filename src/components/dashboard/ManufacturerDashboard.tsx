@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import RegisterBatchForm from '@/components/batch/RegisterBatchForm';
 import BatchList from '@/components/batch/BatchList';
 import VerifyBatchForm from '@/components/shared/VerifyBatchForm';
@@ -7,10 +7,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBatch } from '@/contexts/BatchContext';
 
-const ManufacturerDashboard: React.FC = () => {
+interface ManufacturerDashboardProps {
+  activeTab?: string;
+}
+
+const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ activeTab = 'dashboard' }) => {
   const { user } = useAuth();
   const { batches } = useBatch();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [localActiveTab, setLocalActiveTab] = React.useState(activeTab);
+  
+  // Sync with parent activeTab when it changes
+  useEffect(() => {
+    setLocalActiveTab(activeTab);
+  }, [activeTab]);
 
   // Filter batches created by this manufacturer
   const manufacturerBatches = batches.filter(
@@ -26,7 +35,7 @@ const ManufacturerDashboard: React.FC = () => {
         </p>
       </div>
       
-      <Tabs defaultValue="dashboard" value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={localActiveTab} onValueChange={setLocalActiveTab}>
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="register">Register Batch</TabsTrigger>

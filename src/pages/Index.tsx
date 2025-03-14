@@ -13,6 +13,7 @@ import Header from '@/components/shared/Header';
 const Index = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState('dashboard');
   
   if (isLoading) {
     return (
@@ -36,15 +37,15 @@ const Index = () => {
   const renderDashboard = () => {
     switch (user.role) {
       case 'manufacturer':
-        return <ManufacturerDashboard />;
+        return <ManufacturerDashboard activeTab={activeTab} />;
       case 'wholesaler':
-        return <WholesalerDashboard />;
+        return <WholesalerDashboard activeTab={activeTab} />;
       case 'distributor':
-        return <DistributorDashboard />;
+        return <DistributorDashboard activeTab={activeTab} />;
       case 'retailer':
-        return <RetailerDashboard />;
+        return <RetailerDashboard activeTab={activeTab} />;
       case 'consumer':
-        return <ConsumerPortal />;
+        return <ConsumerPortal activeTab={activeTab} />;
       default:
         return <div>Unknown role</div>;
     }
@@ -52,7 +53,12 @@ const Index = () => {
   
   return (
     <div className="min-h-screen bg-gray-50">
-      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      <Sidebar 
+        sidebarOpen={sidebarOpen} 
+        setSidebarOpen={setSidebarOpen} 
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+      />
       
       <div className={`transition-all duration-300 ${sidebarOpen ? "lg:ml-64" : "lg:ml-16"}`}>
         <Header setSidebarOpen={setSidebarOpen} sidebarOpen={sidebarOpen} />
