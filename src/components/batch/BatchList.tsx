@@ -5,7 +5,7 @@ import { Batch } from '@/types/batch';
 import BatchCard from '@/components/shared/BatchCard';
 import BatchDetail from './BatchDetail';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import { Search, BarChart2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import AnalyticsDashboard from '@/components/analytics/AnalyticsDashboard';
 
 interface BatchListProps {
   type?: 'default' | 'verify' | 'sign';
@@ -43,6 +45,7 @@ const BatchList: React.FC<BatchListProps> = ({
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [batchToReport, setBatchToReport] = useState<string | null>(null);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   
   // Filter batches
   const filteredBatches = batches.filter(batch => {
@@ -81,6 +84,10 @@ const BatchList: React.FC<BatchListProps> = ({
     }
   };
 
+  const toggleAnalyticsView = () => {
+    setShowAnalytics(!showAnalytics);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -116,27 +123,40 @@ const BatchList: React.FC<BatchListProps> = ({
             </SelectGroup>
           </SelectContent>
         </Select>
+        
+        <Button
+          variant="outline"
+          className="gap-2"
+          onClick={toggleAnalyticsView}
+        >
+          <BarChart2 className="h-4 w-4" />
+          {showAnalytics ? "View Batches" : "View Analytics"}
+        </Button>
       </div>
       
-      {filteredBatches.length === 0 ? (
-        <div className="text-center py-10">
-          <p className="text-muted-foreground">No batches found</p>
-        </div>
+      {showAnalytics ? (
+        <AnalyticsDashboard />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredBatches.map((batch) => (
-            <BatchCard
-              key={batch.id}
-              batch={batch}
-              type={type}
-              onView={() => handleOpenBatchDetail(batch)}
-              onSign={type === 'sign' ? () => handleSignBatch(batch.id) : undefined}
-              onReport={
-                type === 'default' ? () => handleReportBatch(batch.id) : undefined
-              }
-            />
-          ))}
-        </div>
+        filteredBatches.length === 0 ? (
+          <div className="text-center py-10">
+            <p className="text-muted-foreground">No batches found</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredBatches.map((batch) => (
+              <BatchCard
+                key={batch.id}
+                batch={batch}
+                type={type}
+                onView={() => handleOpenBatchDetail(batch)}
+                onSign={type === 'sign' ? () => handleSignBatch(batch.id) : undefined}
+                onReport={
+                  type === 'default' ? () => handleReportBatch(batch.id) : undefined
+                }
+              />
+            ))}
+          </div>
+        )
       )}
       
       {selectedBatch && (
