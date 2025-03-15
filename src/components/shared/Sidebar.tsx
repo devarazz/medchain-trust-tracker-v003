@@ -39,9 +39,18 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, activeTa
     consumer: <Search className="h-5 w-5" />
   };
   
+  // Dashboard titles based on user role
+  const dashboardTitles: Record<UserRole, string> = {
+    manufacturer: 'Manufacturer Dashboard',
+    wholesaler: 'Wholesaler Dashboard',
+    distributor: 'Distributor Dashboard',
+    retailer: 'Retailer Dashboard',
+    consumer: 'Consumer Dashboard'
+  };
+  
   // Base menu items for all roles
   const menuItems = [
-    { label: 'Dashboard', icon: <Home className="h-5 w-5" />, id: 'dashboard' },
+    { label: dashboardTitles[user.role], icon: <Home className="h-5 w-5" />, id: 'dashboard' },
   ];
   
   // Add role-specific menu items
