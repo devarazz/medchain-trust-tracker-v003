@@ -1,46 +1,8 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth, UserRole } from './AuthContext';
-
-export interface Signature {
-  role: UserRole;
-  timestamp: string;
-  organizationName: string;
-  userName: string;
-  isVerified: boolean;
-}
-
-export interface Batch {
-  id: string;
-  medicineName: string;
-  manufacturingDate: string;
-  expiryDate: string;
-  quantity: number;
-  manufacturerName: string;
-  createdAt: string;
-  signatures: Signature[];
-  status: 'registered' | 'in-transit' | 'delivered' | 'flagged';
-}
-
-interface BatchContextType {
-  batches: Batch[];
-  selectedBatch: Batch | null;
-  setSelectedBatch: (batch: Batch | null) => void;
-  registerBatch: (batch: Omit<Batch, 'id' | 'createdAt' | 'signatures' | 'status'>) => void;
-  signBatch: (batchId: string) => void;
-  getBatch: (batchId: string) => Batch | undefined;
-  reportFakeBatch: (batchId: string, reason: string) => void;
-  verifiedBatches: Batch[];
-  batchNotifications: Notification[];
-  clearBatchNotification: (id: string) => void;
-}
-
-interface Notification {
-  id: string;
-  message: string;
-  timestamp: string;
-  read: boolean;
-  batchId?: string;
-}
+import { useAuth } from './AuthContext';
+import { Batch, BatchContextType, Notification, Signature } from '@/types/batch';
+import { createNotification, generateBatchId, getVerifiedBatches } from '@/utils/batchUtils';
 
 const BatchContext = createContext<BatchContextType | undefined>(undefined);
 
@@ -50,6 +12,7 @@ export const BatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
   const [batchNotifications, setBatchNotifications] = useState<Notification[]>([]);
   
+  // Load data from localStorage
   useEffect(() => {
     const storedBatches = localStorage.getItem('medchain_batches');
     if (storedBatches) {
@@ -62,24 +25,31 @@ export const BatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, []);
   
+  // Save batches to localStorage when updated
   useEffect(() => {
     if (batches.length > 0) {
       localStorage.setItem('medchain_batches', JSON.stringify(batches));
     }
   }, [batches]);
   
+  // Save notifications to localStorage when updated
   useEffect(() => {
     if (batchNotifications.length > 0) {
       localStorage.setItem('medchain_notifications', JSON.stringify(batchNotifications));
     }
   }, [batchNotifications]);
 
+  const addNotification = (message: string, batchId?: string) => {
+    const newNotification = createNotification(message, batchId);
+    setBatchNotifications(prev => [newNotification, ...prev]);
+  };
+  
   const registerBatch = (batchData: Omit<Batch, 'id' | 'createdAt' | 'signatures' | 'status'>) => {
     if (!user) return;
     
     const newBatch: Batch = {
       ...batchData,
-      id: `BATCH-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
+      id: generateBatchId(),
       createdAt: new Date().toISOString(),
       signatures: [
         {
@@ -94,7 +64,6 @@ export const BatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     
     setBatches(prevBatches => [...prevBatches, newBatch]);
-    
     addNotification(`New batch ${newBatch.id} for ${newBatch.medicineName} registered`, newBatch.id);
   };
   
@@ -151,18 +120,6 @@ export const BatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     );
   };
   
-  const addNotification = (message: string, batchId?: string) => {
-    const newNotification: Notification = {
-      id: Math.random().toString(36).substring(2, 9),
-      message,
-      timestamp: new Date().toISOString(),
-      read: false,
-      batchId
-    };
-    
-    setBatchNotifications(prev => [newNotification, ...prev]);
-  };
-  
   const clearBatchNotification = (id: string) => {
     setBatchNotifications(prev => 
       prev.map(notification => 
@@ -170,26 +127,6 @@ export const BatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           ? { ...notification, read: true } 
           : notification
       )
-    );
-  };
-  
-  const getVerifiedBatches = () => {
-    if (!user) return [];
-    
-    if (user.role === 'manufacturer') {
-      return batches.filter(batch => batch.manufacturerName === user.name);
-    }
-    
-    const roleOrder: UserRole[] = ['manufacturer', 'wholesaler', 'distributor', 'retailer', 'consumer'];
-    const userRoleIndex = roleOrder.indexOf(user.role);
-    
-    if (userRoleIndex <= 0) return [];
-    
-    const previousRole = roleOrder[userRoleIndex - 1];
-    
-    return batches.filter(batch => 
-      batch.signatures.some(sig => sig.role === previousRole) && 
-      !batch.signatures.some(sig => sig.role === user.role)
     );
   };
   
@@ -203,7 +140,7 @@ export const BatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         signBatch,
         getBatch,
         reportFakeBatch,
-        verifiedBatches: getVerifiedBatches(),
+        verifiedBatches: getVerifiedBatches(batches, user),
         batchNotifications,
         clearBatchNotification,
       }}
@@ -220,3 +157,5 @@ export const useBatch = () => {
   }
   return context;
 };
+
+export type { Batch, Signature, Notification } from '@/types/batch';

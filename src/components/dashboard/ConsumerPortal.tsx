@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import VerifyBatchForm from '@/components/shared/VerifyBatchForm';
@@ -13,12 +12,10 @@ const ConsumerPortal: React.FC<ConsumerPortalProps> = ({ activeTab = 'dashboard'
   const { selectedBatch } = useBatch();
   const [localActiveTab, setLocalActiveTab] = React.useState(activeTab);
   
-  // Sync with parent activeTab when it changes
   useEffect(() => {
     setLocalActiveTab(activeTab);
   }, [activeTab]);
 
-  // Map sidebar IDs to tab values
   const mapSidebarToTab = (sidebarId: string) => {
     const mapping: Record<string, string> = {
       'dashboard': 'dashboard',
@@ -28,7 +25,6 @@ const ConsumerPortal: React.FC<ConsumerPortalProps> = ({ activeTab = 'dashboard'
     return mapping[sidebarId] || 'dashboard';
   };
 
-  // Update local tab state when parent activeTab changes
   useEffect(() => {
     setLocalActiveTab(mapSidebarToTab(activeTab));
   }, [activeTab]);
