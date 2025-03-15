@@ -23,6 +23,8 @@ export interface Batch {
 
 interface BatchContextType {
   batches: Batch[];
+  selectedBatch: Batch | null;
+  setSelectedBatch: (batch: Batch | null) => void;
   registerBatch: (batch: Omit<Batch, 'id' | 'createdAt' | 'signatures' | 'status'>) => void;
   signBatch: (batchId: string) => void;
   getBatch: (batchId: string) => Batch | undefined;
@@ -45,9 +47,9 @@ const BatchContext = createContext<BatchContextType | undefined>(undefined);
 export const BatchProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const [batches, setBatches] = useState<Batch[]>([]);
+  const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
   const [batchNotifications, setBatchNotifications] = useState<Notification[]>([]);
   
-  // Load stored batches from localStorage
   useEffect(() => {
     const storedBatches = localStorage.getItem('medchain_batches');
     if (storedBatches) {
@@ -60,14 +62,12 @@ export const BatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, []);
   
-  // Save batches to localStorage when they change
   useEffect(() => {
     if (batches.length > 0) {
       localStorage.setItem('medchain_batches', JSON.stringify(batches));
     }
   }, [batches]);
   
-  // Save notifications to localStorage when they change
   useEffect(() => {
     if (batchNotifications.length > 0) {
       localStorage.setItem('medchain_notifications', JSON.stringify(batchNotifications));
@@ -95,7 +95,6 @@ export const BatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     setBatches(prevBatches => [...prevBatches, newBatch]);
     
-    // Add notification
     addNotification(`New batch ${newBatch.id} for ${newBatch.medicineName} registered`, newBatch.id);
   };
   
@@ -105,7 +104,6 @@ export const BatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setBatches(prevBatches => 
       prevBatches.map(batch => {
         if (batch.id === batchId) {
-          // Check if this role has already signed
           const hasAlreadySigned = batch.signatures.some(sig => sig.role === user.role);
           
           if (!hasAlreadySigned) {
@@ -117,7 +115,6 @@ export const BatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               isVerified: true
             };
             
-            // Add notification
             addNotification(`Batch ${batchId} signed by ${user.role} ${user.name}`, batchId);
             
             return {
@@ -142,7 +139,6 @@ export const BatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setBatches(prevBatches => 
       prevBatches.map(batch => {
         if (batch.id === batchId) {
-          // Add notification about the reported fake batch
           addNotification(`⚠️ Batch ${batchId} reported as potentially fake by ${user.role} ${user.name}. Reason: ${reason}`, batchId);
           
           return {
@@ -177,16 +173,13 @@ export const BatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     );
   };
   
-  // Filter batches based on user role
   const getVerifiedBatches = () => {
     if (!user) return [];
     
-    // Manufacturer can see all batches they created
     if (user.role === 'manufacturer') {
       return batches.filter(batch => batch.manufacturerName === user.name);
     }
     
-    // Other roles can see batches that have been signed by the previous role in the chain
     const roleOrder: UserRole[] = ['manufacturer', 'wholesaler', 'distributor', 'retailer', 'consumer'];
     const userRoleIndex = roleOrder.indexOf(user.role);
     
@@ -204,6 +197,8 @@ export const BatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     <BatchContext.Provider
       value={{
         batches,
+        selectedBatch,
+        setSelectedBatch,
         registerBatch,
         signBatch,
         getBatch,
