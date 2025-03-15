@@ -2,7 +2,7 @@
 import React from 'react';
 import { useBatch } from '@/contexts/BatchContext';
 import { formatDistanceToNow } from 'date-fns';
-import { Check, Info } from 'lucide-react';
+import { Check, Info, X } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -37,7 +37,9 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
               Mark all as read
             </Button>
           )}
-          {/* Removed the redundant close button here */}
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
         </div>
       </div>
       
