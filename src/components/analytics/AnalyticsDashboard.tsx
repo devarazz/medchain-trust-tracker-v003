@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useBatch } from '@/contexts/BatchContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,7 +27,11 @@ import {
   ShieldCheck,
   Truck
 } from 'lucide-react';
-import { ChartContainer, ChartTooltipContent, ChartTooltip } from '@/components/ui/chart';
+import { 
+  ChartContainer, 
+  ChartTooltipContent, 
+  ChartTooltip 
+} from '@/components/ui/chart';
 
 const AnalyticsDashboard = () => {
   const { batches, batchNotifications } = useBatch();
