@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAuth, UserRole } from '@/contexts/AuthContext';
 import { 
@@ -25,7 +24,6 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarProvider,
-  SidebarTrigger
 } from '@/components/ui/sidebar';
 
 interface SidebarProps {
@@ -48,7 +46,6 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, activeTa
     consumer: <Search className="h-5 w-5" />
   };
   
-  // Dashboard titles based on user role
   const dashboardTitles: Record<UserRole, string> = {
     manufacturer: 'Manufacturer Dashboard',
     wholesaler: 'Wholesaler Dashboard',
@@ -57,12 +54,10 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, activeTa
     consumer: 'Consumer Dashboard'
   };
   
-  // Base menu items for all roles
   const menuItems = [
     { label: dashboardTitles[user.role], icon: <Home className="h-5 w-5" />, id: 'dashboard' },
   ];
   
-  // Add role-specific menu items
   if (user.role === 'manufacturer') {
     menuItems.push(
       { label: 'Register Batch', icon: <FileText className="h-5 w-5" />, id: 'register' },
@@ -75,7 +70,6 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, activeTa
       { label: 'Certificate', icon: <BookOpen className="h-5 w-5" />, id: 'certificate' }
     );
   } else {
-    // For wholesaler, distributor, retailer
     menuItems.push(
       { label: 'Verify Batch', icon: <Shield className="h-5 w-5" />, id: 'verify' },
       { label: 'Sign Batch', icon: <FileText className="h-5 w-5" />, id: 'sign' },
@@ -89,13 +83,11 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, activeTa
       setActiveTab(id);
     }
     
-    // On mobile, close the sidebar after selection
     if (window.innerWidth < 1024) {
       setSidebarOpen(false);
     }
   };
 
-  // Toggle sidebar visibility
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
