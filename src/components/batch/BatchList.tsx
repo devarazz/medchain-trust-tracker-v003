@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { useBatch, Batch } from '@/contexts/BatchContext';
+import { useBatch } from '@/contexts/BatchContext';
+import { Batch } from '@/types/batch';
 import BatchCard from '@/components/shared/BatchCard';
 import BatchDetail from './BatchDetail';
 import { Input } from '@/components/ui/input';
