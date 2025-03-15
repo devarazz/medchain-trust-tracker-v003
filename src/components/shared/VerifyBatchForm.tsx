@@ -14,9 +14,8 @@ interface VerifyBatchFormProps {
 
 const VerifyBatchForm: React.FC<VerifyBatchFormProps> = ({ onVerify }) => {
   const [batchId, setBatchId] = useState('');
-  const [batch, setBatch] = useState<Batch | null>(null);
   const [error, setError] = useState('');
-  const { getBatch } = useBatch();
+  const { getBatch, setSelectedBatch } = useBatch();
 
   const handleVerify = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,11 +29,11 @@ const VerifyBatchForm: React.FC<VerifyBatchFormProps> = ({ onVerify }) => {
     
     if (!foundBatch) {
       setError(`No batch found with ID: ${batchId}`);
-      setBatch(null);
+      setSelectedBatch(null);
       return;
     }
     
-    setBatch(foundBatch);
+    setSelectedBatch(foundBatch);
     setError('');
     
     if (onVerify) {
@@ -79,13 +78,6 @@ const VerifyBatchForm: React.FC<VerifyBatchFormProps> = ({ onVerify }) => {
           <Search className="mr-2 h-4 w-4" /> Verify Batch
         </Button>
       </form>
-      
-      {batch && (
-        <div className="mt-6 space-y-4 animate-fade-in">
-          <h3 className="text-lg font-semibold">Batch Information</h3>
-          <BatchJourney batch={batch} />
-        </div>
-      )}
     </div>
   );
 };
