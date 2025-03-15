@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Batch } from '@/types/batch';
+import { Batch } from '@/contexts/BatchContext';
 import BatchJourney from '@/components/shared/BatchJourney';
 
 interface BatchDetailProps {

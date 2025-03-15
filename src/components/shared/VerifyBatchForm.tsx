@@ -1,9 +1,9 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useBatch } from '@/contexts/BatchContext';
-import { Batch } from '@/types/batch';
+import { useBatch, Batch } from '@/contexts/BatchContext';
 import { QrCode, Search, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import BatchJourney from './BatchJourney';
