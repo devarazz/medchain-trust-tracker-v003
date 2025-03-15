@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useAuth, UserRole } from '@/contexts/AuthContext';
 import { 
@@ -10,21 +11,13 @@ import {
   PackageCheck, 
   Search, 
   Shield, 
-  Truck,
-  ChevronLeft, 
-  ChevronRight 
+  Truck, 
+  X,
+  ChevronRight,
+  ChevronLeft
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import {
-  Sidebar as ShadcnSidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarProvider,
-} from '@/components/ui/sidebar';
 
 interface SidebarProps {
   sidebarOpen: boolean;
@@ -46,18 +39,12 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, activeTa
     consumer: <Search className="h-5 w-5" />
   };
   
-  const dashboardTitles: Record<UserRole, string> = {
-    manufacturer: 'Manufacturer Dashboard',
-    wholesaler: 'Wholesaler Dashboard',
-    distributor: 'Distributor Dashboard',
-    retailer: 'Retailer Dashboard',
-    consumer: 'Consumer Dashboard'
-  };
-  
+  // Base menu items for all roles
   const menuItems = [
-    { label: dashboardTitles[user.role], icon: <Home className="h-5 w-5" />, id: 'dashboard' },
+    { label: 'Dashboard', icon: <Home className="h-5 w-5" />, id: 'dashboard' },
   ];
   
+  // Add role-specific menu items
   if (user.role === 'manufacturer') {
     menuItems.push(
       { label: 'Register Batch', icon: <FileText className="h-5 w-5" />, id: 'register' },
@@ -70,6 +57,7 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, activeTa
       { label: 'Certificate', icon: <BookOpen className="h-5 w-5" />, id: 'certificate' }
     );
   } else {
+    // For wholesaler, distributor, retailer
     menuItems.push(
       { label: 'Verify Batch', icon: <Shield className="h-5 w-5" />, id: 'verify' },
       { label: 'Sign Batch', icon: <FileText className="h-5 w-5" />, id: 'sign' },
@@ -83,19 +71,31 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, activeTa
       setActiveTab(id);
     }
     
+    // On mobile, close the sidebar after selection
     if (window.innerWidth < 1024) {
       setSidebarOpen(false);
     }
   };
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
   return (
-    <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
-      <ShadcnSidebar>
-        <SidebarHeader className="flex items-center justify-between border-b px-4 py-3">
+    <>
+      {/* Mobile sidebar backdrop */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          "fixed top-0 left-0 z-40 h-full w-64 bg-white border-r border-border transform transition-all duration-300 ease-in-out",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0 lg:w-16",
+          "lg:transition-width"
+        )}
+      >
+        <div className="flex h-16 items-center justify-between px-4 border-b">
           <div className={cn("flex items-center gap-2", !sidebarOpen && "lg:hidden")}>
             {roleIcon[user.role]}
             <span className="font-semibold">MedChain</span>
@@ -105,9 +105,17 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, activeTa
           </div>
           <Button 
             variant="ghost" 
-            size="icon"
-            onClick={toggleSidebar}
-            className="lg:flex"
+            size="icon" 
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden"
+          >
+            <X className="h-5 w-5" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="hidden lg:flex"
           >
             {sidebarOpen ? (
               <ChevronLeft className="h-5 w-5" />
@@ -115,26 +123,30 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, activeTa
               <ChevronRight className="h-5 w-5" />
             )}
           </Button>
-        </SidebarHeader>
+        </div>
         
-        <SidebarContent>
-          <SidebarMenu>
+        <div className="py-4">
+          <nav className="space-y-1 px-2">
             {menuItems.map((item) => (
-              <SidebarMenuItem key={item.id}>
-                <SidebarMenuButton
-                  isActive={activeTab === item.id}
-                  tooltip={item.label}
-                  onClick={() => handleMenuClick(item.id)}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              <button
+                key={item.id}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                  activeTab === item.id 
+                    ? "bg-primary/10 text-primary" 
+                    : "text-gray-700 hover:bg-primary/10 hover:text-primary",
+                  !sidebarOpen && "lg:justify-center"
+                )}
+                onClick={() => handleMenuClick(item.id)}
+              >
+                {item.icon}
+                <span className={cn("", !sidebarOpen && "lg:hidden")}>{item.label}</span>
+              </button>
             ))}
-          </SidebarMenu>
-        </SidebarContent>
-      </ShadcnSidebar>
-    </SidebarProvider>
+          </nav>
+        </div>
+      </aside>
+    </>
   );
 };
 

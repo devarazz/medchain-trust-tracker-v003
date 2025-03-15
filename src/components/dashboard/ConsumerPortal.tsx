@@ -94,7 +94,7 @@ const ConsumerPortal: React.FC<ConsumerPortalProps> = ({ activeTab = 'dashboard'
               
               <div className="mb-4">
                 <h3 className="font-medium text-sm text-muted-foreground">Batch ID</h3>
-                <p className="text-lg">{selectedBatch.id}</p>
+                <p className="text-lg">{selectedBatch.batchId}</p>
               </div>
               
               <div className="mb-4">
