@@ -33,7 +33,7 @@ const Index = () => {
     );
   }
   
-  // Render the appropriate dashboard based on user role
+  // Render the appropriate dashboard based on user role and active tab
   const renderDashboard = () => {
     switch (user.role) {
       case 'manufacturer':
@@ -52,7 +52,7 @@ const Index = () => {
   };
   
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar 
         sidebarOpen={sidebarOpen} 
         setSidebarOpen={setSidebarOpen} 
@@ -60,7 +60,7 @@ const Index = () => {
         setActiveTab={setActiveTab}
       />
       
-      <div className={`transition-all duration-300 ${sidebarOpen ? "lg:ml-64" : "lg:ml-16"}`}>
+      <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? "lg:ml-64" : "lg:ml-16"}`}>
         <Header setSidebarOpen={setSidebarOpen} sidebarOpen={sidebarOpen} />
         
         <main className="container mx-auto py-6 px-4 animate-fade-in">
