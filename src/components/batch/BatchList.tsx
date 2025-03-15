@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useBatch } from '@/contexts/BatchContext';
 import { Batch } from '@/types/batch';
@@ -47,7 +46,6 @@ const BatchList: React.FC<BatchListProps> = ({
   const [batchToReport, setBatchToReport] = useState<string | null>(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
   
-  // Filter batches
   const filteredBatches = batches.filter(batch => {
     const matchesSearch = 
       batch.medicineName.toLowerCase().includes(searchTerm.toLowerCase()) || 
