@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth, UserRole } from './AuthContext';
 
@@ -30,6 +31,8 @@ interface BatchContextType {
   verifiedBatches: Batch[];
   batchNotifications: Notification[];
   clearBatchNotification: (id: string) => void;
+  selectedBatch: Batch | null;
+  setSelectedBatch: (batch: Batch | null) => void;
 }
 
 interface Notification {
@@ -46,6 +49,7 @@ export const BatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const { user } = useAuth();
   const [batches, setBatches] = useState<Batch[]>([]);
   const [batchNotifications, setBatchNotifications] = useState<Notification[]>([]);
+  const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
   
   // Load stored batches from localStorage
   useEffect(() => {
@@ -211,6 +215,8 @@ export const BatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         verifiedBatches: getVerifiedBatches(),
         batchNotifications,
         clearBatchNotification,
+        selectedBatch,
+        setSelectedBatch,
       }}
     >
       {children}
