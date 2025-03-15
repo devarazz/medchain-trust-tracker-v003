@@ -21,6 +21,7 @@ import {
   CardTitle 
 } from '@/components/ui/card';
 import { Loader2, ShieldCheck } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const LoginForm: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -80,6 +81,14 @@ const LoginForm: React.FC = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   className="input-field"
                 />
+                <div className="text-right">
+                  <Link 
+                    to="/forgot-password" 
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="role">Role</Label>
@@ -116,7 +125,13 @@ const LoginForm: React.FC = () => {
           </form>
         </CardContent>
         <CardFooter className="flex flex-col items-center justify-center text-xs text-muted-foreground">
-          <p className="text-center">Secure and transparent medicine tracking</p>
+          <p className="text-center mb-2">Secure and transparent medicine tracking</p>
+          <p className="text-sm">
+            Don't have an account?{' '}
+            <Link to="/signup" className="text-primary font-medium hover:underline">
+              Sign up
+            </Link>
+          </p>
         </CardFooter>
       </Card>
     </div>
