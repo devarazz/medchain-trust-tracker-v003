@@ -5,7 +5,10 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { X, AlertCircle } from 'lucide-react';
 
 interface BatchReportDialogProps {
   open: boolean;
@@ -42,23 +45,21 @@ const BatchReportDialog: React.FC<BatchReportDialogProps> = ({
             />
           </div>
         </div>
-        <div className="flex gap-2 justify-end">
-          <button
-            type="button"
-            className="btn-secondary"
+        <DialogFooter className="flex gap-2 justify-end">
+          <Button
+            variant="outline"
             onClick={() => setOpen(false)}
           >
             Cancel
-          </button>
-          <button
-            type="button"
-            className="btn-primary bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          </Button>
+          <Button
+            variant="destructive"
             onClick={onSubmit}
             disabled={!reportReason.trim()}
           >
             Report Batch
-          </button>
-        </div>
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
