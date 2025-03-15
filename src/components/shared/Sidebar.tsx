@@ -90,12 +90,12 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, activeTa
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-40 h-full w-64 bg-white border-r border-border transform transition-all duration-300 ease-in-out",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0 lg:w-16",
+          "fixed top-0 left-0 z-40 h-full bg-white dark:bg-background border-r border-border dark:border-border/20 transform transition-all duration-300 ease-in-out",
+          sidebarOpen ? "translate-x-0 w-64" : "-translate-x-full lg:translate-x-0 lg:w-16",
           "lg:transition-width"
         )}
       >
-        <div className="flex h-16 items-center justify-between px-4 border-b">
+        <div className="flex h-16 items-center justify-between px-4 border-b dark:border-border/20">
           <div className={cn("flex items-center gap-2", !sidebarOpen && "lg:hidden")}>
             {roleIcon[user.role]}
             <span className="font-semibold">MedChain</span>
@@ -133,8 +133,8 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, activeTa
                 className={cn(
                   "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                   activeTab === item.id 
-                    ? "bg-primary/10 text-primary" 
-                    : "text-gray-700 hover:bg-primary/10 hover:text-primary",
+                    ? "bg-primary/10 text-primary dark:bg-primary/20" 
+                    : "text-gray-700 dark:text-gray-300 hover:bg-primary/10 hover:text-primary dark:hover:bg-primary/20",
                   !sidebarOpen && "lg:justify-center"
                 )}
                 onClick={() => handleMenuClick(item.id)}

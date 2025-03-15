@@ -21,6 +21,7 @@ import {
   SheetTrigger 
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
+import ThemeToggle from './ThemeToggle';
 
 interface HeaderProps {
   setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -47,7 +48,7 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, sidebarOpen }) => {
 
   return (
     <header className={cn(
-      "sticky top-0 z-30 flex items-center justify-between h-16 px-4 border-b backdrop-blur-sm bg-white/80",
+      "sticky top-0 z-30 flex items-center justify-between h-16 px-4 border-b backdrop-blur-sm dark:border-border/20 dark:bg-background/80 bg-white/80",
       sidebarOpen ? "lg:pl-64" : "lg:pl-20",
       "transition-all duration-300"
     )}>
@@ -67,6 +68,8 @@ const Header: React.FC<HeaderProps> = ({ setSidebarOpen, sidebarOpen }) => {
       </div>
       
       <div className="flex items-center gap-2">
+        <ThemeToggle />
+        
         <Sheet open={notificationsOpen} onOpenChange={setNotificationsOpen}>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon" className="relative">
