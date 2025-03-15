@@ -1,46 +1,16 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuth, UserRole } from './AuthContext';
-
-export interface Signature {
-  role: UserRole;
-  timestamp: string;
-  organizationName: string;
-  userName: string;
-  isVerified: boolean;
-}
-
-export interface Batch {
-  id: string;
-  medicineName: string;
-  manufacturingDate: string;
-  expiryDate: string;
-  quantity: number;
-  manufacturerName: string;
-  createdAt: string;
-  signatures: Signature[];
-  status: 'registered' | 'in-transit' | 'delivered' | 'flagged';
-}
-
-interface BatchContextType {
-  batches: Batch[];
-  registerBatch: (batch: Omit<Batch, 'id' | 'createdAt' | 'signatures' | 'status'>) => void;
-  signBatch: (batchId: string) => void;
-  getBatch: (batchId: string) => Batch | undefined;
-  reportFakeBatch: (batchId: string, reason: string) => void;
-  verifiedBatches: Batch[];
-  batchNotifications: Notification[];
-  clearBatchNotification: (id: string) => void;
-  selectedBatch: Batch | null;
-  setSelectedBatch: (batch: Batch | null) => void;
-}
-
-interface Notification {
-  id: string;
-  message: string;
-  timestamp: string;
-  read: boolean;
-  batchId?: string;
-}
+import { useAuth } from './AuthContext';
+import { 
+  Batch, 
+  Notification, 
+  BatchContextType 
+} from '@/types/batch';
+import { 
+  createNewBatch, 
+  createNotification, 
+  getVerifiedBatches 
+} from '@/utils/batchUtils';
 
 const BatchContext = createContext<BatchContextType | undefined>(undefined);
 
@@ -50,6 +20,7 @@ export const BatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [batchNotifications, setBatchNotifications] = useState<Notification[]>([]);
   const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
   
+  // Load data from localStorage on initial render
   useEffect(() => {
     const storedBatches = localStorage.getItem('medchain_batches');
     if (storedBatches) {
@@ -62,12 +33,14 @@ export const BatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, []);
   
+  // Save batches to localStorage when they change
   useEffect(() => {
     if (batches.length > 0) {
       localStorage.setItem('medchain_batches', JSON.stringify(batches));
     }
   }, [batches]);
   
+  // Save notifications to localStorage when they change
   useEffect(() => {
     if (batchNotifications.length > 0) {
       localStorage.setItem('medchain_notifications', JSON.stringify(batchNotifications));
@@ -77,22 +50,7 @@ export const BatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const registerBatch = (batchData: Omit<Batch, 'id' | 'createdAt' | 'signatures' | 'status'>) => {
     if (!user) return;
     
-    const newBatch: Batch = {
-      ...batchData,
-      id: `BATCH-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
-      createdAt: new Date().toISOString(),
-      signatures: [
-        {
-          role: 'manufacturer',
-          timestamp: new Date().toISOString(),
-          organizationName: user.organization || 'Unknown Organization',
-          userName: user.name,
-          isVerified: true
-        }
-      ],
-      status: 'registered'
-    };
-    
+    const newBatch = createNewBatch(batchData, user.name, user.organization);
     setBatches(prevBatches => [...prevBatches, newBatch]);
     
     addNotification(`New batch ${newBatch.id} for ${newBatch.medicineName} registered`, newBatch.id);
@@ -107,7 +65,7 @@ export const BatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const hasAlreadySigned = batch.signatures.some(sig => sig.role === user.role);
           
           if (!hasAlreadySigned) {
-            const newSignature: Signature = {
+            const newSignature = {
               role: user.role,
               timestamp: new Date().toISOString(),
               organizationName: user.organization || 'Unknown Organization',
@@ -152,14 +110,7 @@ export const BatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
   
   const addNotification = (message: string, batchId?: string) => {
-    const newNotification: Notification = {
-      id: Math.random().toString(36).substring(2, 9),
-      message,
-      timestamp: new Date().toISOString(),
-      read: false,
-      batchId
-    };
-    
+    const newNotification = createNotification(message, batchId);
     setBatchNotifications(prev => [newNotification, ...prev]);
   };
   
@@ -173,26 +124,6 @@ export const BatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     );
   };
   
-  const getVerifiedBatches = () => {
-    if (!user) return [];
-    
-    if (user.role === 'manufacturer') {
-      return batches.filter(batch => batch.manufacturerName === user.name);
-    }
-    
-    const roleOrder: UserRole[] = ['manufacturer', 'wholesaler', 'distributor', 'retailer', 'consumer'];
-    const userRoleIndex = roleOrder.indexOf(user.role);
-    
-    if (userRoleIndex <= 0) return [];
-    
-    const previousRole = roleOrder[userRoleIndex - 1];
-    
-    return batches.filter(batch => 
-      batch.signatures.some(sig => sig.role === previousRole) && 
-      !batch.signatures.some(sig => sig.role === user.role)
-    );
-  };
-  
   return (
     <BatchContext.Provider
       value={{
@@ -201,7 +132,7 @@ export const BatchProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         signBatch,
         getBatch,
         reportFakeBatch,
-        verifiedBatches: getVerifiedBatches(),
+        verifiedBatches: getVerifiedBatches(batches, user),
         batchNotifications,
         clearBatchNotification,
         selectedBatch,
@@ -220,3 +151,6 @@ export const useBatch = () => {
   }
   return context;
 };
+
+// Re-export the types for easier imports
+export type { Batch, Signature, Notification } from '@/types/batch';
