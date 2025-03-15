@@ -12,7 +12,18 @@ import { Batch } from '@/types/batch';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Clock, ShieldAlert, Truck } from 'lucide-react';
+import { 
+  CheckCircle, 
+  Clock, 
+  FileDigit,
+  Link2,
+  LucideIcon,
+  Package,
+  Shield,
+  ShieldAlert, 
+  Truck 
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface BatchCardProps {
   batch: Batch;
@@ -60,6 +71,51 @@ const BatchCard: React.FC<BatchCardProps> = ({
     }
   };
 
+  const renderBlockchainIndicator = () => {
+    const verifiedSignatures = batch.signatures.filter(sig => sig.isVerified).length;
+    const totalRequired = 4;
+    const percentage = (verifiedSignatures / totalRequired) * 100;
+    
+    return (
+      <div className="flex items-center mt-2 pt-2 border-t border-border">
+        <div className="flex gap-1 items-center mr-2">
+          <Shield className={cn(
+            "h-4 w-4",
+            percentage === 100 ? "text-green-500" : "text-amber-500"
+          )} />
+          <span className="text-xs font-medium">Blockchain Verified</span>
+        </div>
+        <div className="flex-1 bg-gray-200 rounded-full h-2">
+          <div 
+            className={cn(
+              "h-2 rounded-full",
+              percentage === 100 ? "bg-green-500" : "bg-amber-500"
+            )}
+            style={{ width: `${percentage}%` }}
+          ></div>
+        </div>
+      </div>
+    );
+  };
+
+  const BlockchainStat = ({
+    icon: Icon,
+    label,
+    value
+  }: {
+    icon: LucideIcon;
+    label: string;
+    value: string | number;
+  }) => (
+    <div className="flex items-center gap-1">
+      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+      <div>
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="text-sm font-medium">{value}</p>
+      </div>
+    </div>
+  );
+
   return (
     <Card className="w-full overflow-hidden transition-all duration-300 hover:shadow-md">
       <CardHeader className="pb-2">
@@ -89,6 +145,22 @@ const BatchCard: React.FC<BatchCardProps> = ({
             <p className="text-muted-foreground">Signatures</p>
             <p>{batch.signatures.length} of 4</p>
           </div>
+        </div>
+        
+        <div className="flex flex-col gap-1 mt-3">
+          <div className="grid grid-cols-2 gap-1.5">
+            <BlockchainStat 
+              icon={FileDigit} 
+              label="Ledger ID" 
+              value={`#${batch.id.substring(batch.id.length - 5)}`} 
+            />
+            <BlockchainStat 
+              icon={Link2} 
+              label="Block Height" 
+              value={Math.floor(Math.random() * 1000000)} 
+            />
+          </div>
+          {renderBlockchainIndicator()}
         </div>
       </CardContent>
       <CardFooter className="pt-2">

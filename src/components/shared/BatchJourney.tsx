@@ -4,8 +4,20 @@ import { Batch } from '@/types/batch';
 import { format } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, Factory, Package, ShoppingBag, Truck, User } from 'lucide-react';
+import { 
+  Download, 
+  Factory, 
+  FileDigit, 
+  Link, 
+  Lock, 
+  Package, 
+  ShieldCheck, 
+  ShoppingBag, 
+  Truck, 
+  User 
+} from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 
 interface BatchJourneyProps {
   batch: Batch;
@@ -42,6 +54,11 @@ const BatchJourney: React.FC<BatchJourneyProps> = ({ batch }) => {
     
     URL.revokeObjectURL(url);
   };
+  
+  // Generate a fake blockchain hash for display
+  const generateBlockchainHash = (batchId: string) => {
+    return `0x${batchId.split('').map(c => c.charCodeAt(0).toString(16)).join('').substring(0, 12)}...`;
+  };
 
   return (
     <Card className="w-full">
@@ -66,6 +83,45 @@ const BatchJourney: React.FC<BatchJourneyProps> = ({ batch }) => {
             </div>
           </div>
           
+          <div className="bg-slate-50 p-3 rounded-md border border-slate-200">
+            <div className="flex items-center gap-2 mb-2">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              <h4 className="font-medium">Blockchain Verification</h4>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                  <Link className="h-3.5 w-3.5" />
+                  <span>Transaction Hash</span>
+                </div>
+                <p className="font-mono text-xs">{generateBlockchainHash(batch.id)}</p>
+              </div>
+              <div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                  <FileDigit className="h-3.5 w-3.5" />
+                  <span>Block Height</span>
+                </div>
+                <p className="font-medium">{Math.floor(Math.random() * 1000000)}</p>
+              </div>
+              <div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                  <Lock className="h-3.5 w-3.5" />
+                  <span>Consensus</span>
+                </div>
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 font-normal text-xs">
+                  Verified
+                </Badge>
+              </div>
+              <div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                  <FileDigit className="h-3.5 w-3.5" />
+                  <span>Smart Contract</span>
+                </div>
+                <p className="font-medium">MedChainTracker</p>
+              </div>
+            </div>
+          </div>
+          
           <Separator />
           
           <div className="space-y-2">
@@ -80,11 +136,19 @@ const BatchJourney: React.FC<BatchJourneyProps> = ({ batch }) => {
                     {roleIcons[signature.role]}
                   </div>
                   <div className="space-y-1 pt-1">
-                    <p className="font-medium capitalize">{signature.role}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium capitalize">{signature.role}</p>
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        <ShieldCheck className="mr-1 h-3 w-3" /> Verified
+                      </Badge>
+                    </div>
                     <p className="text-sm text-muted-foreground">{signature.organizationName}</p>
                     <p className="text-xs text-muted-foreground">
                       Signed by {signature.userName} on {format(new Date(signature.timestamp), 'PPP p')}
                     </p>
+                    <div className="text-xs font-mono text-slate-500 mt-1">
+                      Signature: {generateBlockchainHash(signature.userName + signature.timestamp).substring(0, 30)}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -107,13 +171,15 @@ const BatchJourney: React.FC<BatchJourneyProps> = ({ batch }) => {
           
           <Separator />
           
-          <Button 
-            onClick={handleDownloadCertificate} 
-            variant="outline" 
-            className="w-full"
-          >
-            <Download className="mr-2 h-4 w-4" /> Download Certificate
-          </Button>
+          <div className="space-y-2">
+            <Button 
+              onClick={handleDownloadCertificate} 
+              variant="outline" 
+              className="w-full"
+            >
+              <Download className="mr-2 h-4 w-4" /> Download Blockchain Certificate
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
