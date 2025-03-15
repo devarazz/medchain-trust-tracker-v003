@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Batch } from '@/contexts/BatchContext';
+import { Batch } from '@/types/batch';
 import { format } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
