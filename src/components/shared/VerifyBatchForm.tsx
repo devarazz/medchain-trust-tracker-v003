@@ -2,59 +2,90 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
-import { useBatch } from '@/contexts/BatchContext';
-import { toast } from 'sonner';
+import { Label } from '@/components/ui/label';
+import { useBatch, Batch } from '@/contexts/BatchContext';
+import { QrCode, Search, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import BatchJourney from './BatchJourney';
 
-const VerifyBatchForm: React.FC = () => {
+interface VerifyBatchFormProps {
+  onVerify?: (batch: Batch) => void;
+}
+
+const VerifyBatchForm: React.FC<VerifyBatchFormProps> = ({ onVerify }) => {
   const [batchId, setBatchId] = useState('');
-  const { getBatch, batches, setSelectedBatch } = useBatch();
-  
-  const handleVerifyBatch = (e: React.FormEvent) => {
+  const [batch, setBatch] = useState<Batch | null>(null);
+  const [error, setError] = useState('');
+  const { getBatch } = useBatch();
+
+  const handleVerify = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!batchId.trim()) {
-      toast.error('Please enter a batch ID');
+      setError('Please enter a batch ID');
       return;
     }
     
-    const batch = getBatch(batchId);
+    const foundBatch = getBatch(batchId.trim());
     
-    if (batch) {
-      setSelectedBatch(batch);
-      toast.success(`Batch ${batch.id} for ${batch.medicineName} found`);
-    } else {
-      setSelectedBatch(null);
-      toast.error('No batch found with this ID');
+    if (!foundBatch) {
+      setError(`No batch found with ID: ${batchId}`);
+      setBatch(null);
+      return;
+    }
+    
+    setBatch(foundBatch);
+    setError('');
+    
+    if (onVerify) {
+      onVerify(foundBatch);
     }
   };
-  
+
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm border">
-      <h2 className="text-xl font-semibold mb-4">Verify Medicine Batch</h2>
-      <p className="mb-6 text-muted-foreground">
-        Enter the batch ID found on your medicine packaging to verify its authenticity.
-      </p>
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <h3 className="text-lg font-semibold">Verify Batch</h3>
+        <p className="text-sm text-muted-foreground">
+          Enter a batch ID to verify its authenticity and track its journey through the supply chain.
+        </p>
+      </div>
       
-      <form onSubmit={handleVerifyBatch} className="space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-          <Input
-            placeholder="Enter Batch ID (e.g., BATCH-X1Y2Z)"
-            className="pl-10"
-            value={batchId}
-            onChange={(e) => setBatchId(e.target.value)}
-          />
+      <form onSubmit={handleVerify} className="space-y-4">
+        <div className="flex flex-col space-y-1.5">
+          <Label htmlFor="batchId">Batch ID</Label>
+          <div className="flex gap-2">
+            <Input
+              id="batchId"
+              placeholder="Enter batch ID (e.g., BATCH-X12Y5)"
+              value={batchId}
+              onChange={(e) => setBatchId(e.target.value)}
+            />
+            <Button type="button" variant="outline" size="icon">
+              <QrCode className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
         
-        <Button type="submit" className="w-full">
-          Verify Batch
-        </Button>
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
         
-        <p className="text-sm text-muted-foreground text-center">
-          Batch IDs are printed on the medicine packaging or can be obtained from your healthcare provider.
-        </p>
+        <Button type="submit" className="w-full">
+          <Search className="mr-2 h-4 w-4" /> Verify Batch
+        </Button>
       </form>
+      
+      {batch && (
+        <div className="mt-6 space-y-4 animate-fade-in">
+          <h3 className="text-lg font-semibold">Batch Information</h3>
+          <BatchJourney batch={batch} />
+        </div>
+      )}
     </div>
   );
 };

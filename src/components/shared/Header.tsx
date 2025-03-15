@@ -1,66 +1,115 @@
 
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { Bell, LogOut, Menu, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { MenuIcon, User, BellIcon } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
+import { useBatch } from '@/contexts/BatchContext';
+import NotificationPanel from './NotificationPanel';
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetTrigger 
+} from '@/components/ui/sheet';
+import { cn } from '@/lib/utils';
 
 interface HeaderProps {
-  setSidebarOpen: (open: boolean) => void;
+  setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
   sidebarOpen: boolean;
 }
 
 const Header: React.FC<HeaderProps> = ({ setSidebarOpen, sidebarOpen }) => {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { batchNotifications } = useBatch();
+  const [notificationsOpen, setNotificationsOpen] = React.useState(false);
   
-  if (!user) return null;
+  const unreadNotifications = batchNotifications.filter(n => !n.read).length;
+  
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
+  
+  const roleDisplay = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : '';
 
   return (
-    <header className="sticky top-0 z-30 h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-full items-center">
+    <header className={cn(
+      "sticky top-0 z-30 flex items-center justify-between h-16 px-4 border-b backdrop-blur-sm bg-white/80",
+      sidebarOpen ? "lg:pl-64" : "lg:pl-20",
+      "transition-all duration-300"
+    )}>
+      <div className="flex items-center gap-2">
         <Button 
           variant="ghost" 
           size="icon" 
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="lg:hidden mr-2"
+          className="lg:hidden"
         >
-          <MenuIcon className="h-5 w-5" />
-          <span className="sr-only">Toggle menu</span>
+          <Menu className="h-5 w-5" />
         </Button>
-        
-        <div className="flex-1 flex items-center justify-end space-x-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/profile')}
-            className="relative"
-          >
-            <User className="h-5 w-5" />
-          </Button>
-          
-          <div className="relative">
-            <Button variant="ghost" size="icon">
-              <BellIcon className="h-5 w-5" />
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary"></span>
-            </Button>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <div className="hidden md:block">
-              <div className="text-sm font-medium">{user.name}</div>
-              <div className="text-xs text-muted-foreground capitalize">{user.role}</div>
-            </div>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => logout()}
-            >
-              Logout
-            </Button>
-          </div>
+        <div className="hidden md:block">
+          <h1 className="text-xl font-semibold">MedChain</h1>
+          <p className="text-xs text-muted-foreground">{roleDisplay} Dashboard</p>
         </div>
+      </div>
+      
+      <div className="flex items-center gap-2">
+        <Sheet open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="relative">
+              <Bell className="h-5 w-5" />
+              {unreadNotifications > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0"
+                >
+                  {unreadNotifications}
+                </Badge>
+              )}
+            </Button>
+          </SheetTrigger>
+          <SheetContent>
+            <NotificationPanel onClose={() => setNotificationsOpen(false)} />
+          </SheetContent>
+        </Sheet>
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  {user ? getInitials(user.name) : 'U'}
+                </AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56" align="end" forceMount>
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">{user?.name}</p>
+                <p className="text-xs leading-none text-muted-foreground">{user?.username}</p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="flex items-center gap-2" onClick={logout}>
+              <LogOut className="h-4 w-4" />
+              <span>Log out</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );
