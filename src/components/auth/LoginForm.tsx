@@ -90,8 +90,8 @@ const LoginForm: React.FC = () => {
                   <SelectContent>
                     <SelectGroup>
                       <SelectItem value="manufacturer">Manufacturer</SelectItem>
-                      <SelectItem value="wholesaler">Wholesaler</SelectItem>
                       <SelectItem value="distributor">Distributor</SelectItem>
+                      <SelectItem value="wholesaler">Wholesaler</SelectItem>
                       <SelectItem value="retailer">Retailer</SelectItem>
                       <SelectItem value="consumer">Consumer</SelectItem>
                     </SelectGroup>
