@@ -12,7 +12,7 @@ interface DistributorDashboardProps {
 const DistributorDashboard: React.FC<DistributorDashboardProps> = ({ activeTab = 'dashboard' }) => {
   const { batches, verifiedBatches } = useBatch();
   const [localActiveTab, setLocalActiveTab] = React.useState(activeTab);
-  
+  console.log("didtrinbiutoe: ",batches,verifiedBatches)
   // Sync with parent activeTab when it changes
   useEffect(() => {
     setLocalActiveTab(activeTab);

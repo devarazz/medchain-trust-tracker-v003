@@ -149,7 +149,7 @@ const BatchCard: React.FC<BatchCardProps> = ({
         
         <div className="flex flex-col gap-1 mt-3">
           <div className="grid grid-cols-2 gap-1.5">
-            <BlockchainStat 
+            {/* <BlockchainStat 
               icon={FileDigit} 
               label="Ledger ID" 
               value={`#${batch.id.substring(batch.id.length - 5)}`} 
@@ -158,7 +158,7 @@ const BatchCard: React.FC<BatchCardProps> = ({
               icon={Link2} 
               label="Block Height" 
               value={Math.floor(Math.random() * 1000000)} 
-            />
+            /> */}
           </div>
           {renderBlockchainIndicator()}
         </div>
