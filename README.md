@@ -1,70 +1,60 @@
-# Welcome to your Lovable project
+# MedChain - Blockchain-Based Medical Supply Chain System
 
-## Project info
+MedChain is a decentralized, blockchain-powered application designed to ensure transparency, authenticity, and traceability across the pharmaceutical supply chain. The platform features role-based login for each stakeholder involved—from Manufacturer to Consumer.
 
-**URL**: https://lovable.dev/projects/ba53492b-2283-413f-8fe2-e7193bd673fb
+---
 
-## How can I edit this code?
+## 🚀 **Features**
 
-There are several ways of editing your application.
+### 🔐 Role-Based Access:
+- **Manufacturer**: Register and certify medicine batches.
+- **Distributor**: Verify and sign batches after validation.
+- **Wholesaler**: Double-check and sign after distributor.
+- **Retailer**: Final verification before selling to consumers.
+- **Consumer**: Verify authenticity of medicines and download certificates.
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/ba53492b-2283-413f-8fe2-e7193bd673fb) and start prompting.
+## 🖥️ **User Interface**
 
-Changes made via Lovable will be committed automatically to this repo.
+The system includes a clean UI with:
+- Profile dropdown menu with user info and options (as seen in the image):
+  - Username & email
+  - Profile
+  - Settings
+  - Sign out
 
-**Use your preferred IDE**
+---
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🧪 **Tech Stack**
+- **Frontend**: React.js / HTML / CSS (TailwindCSS recommended)
+- **Backend**: Node.js / Express.js
+- **Blockchain**: Ethereum / Hyperledger Fabric
+- **Smart Contracts**: Solidity
+- **Database**: MongoDB / IPFS for off-chain storage
+- **QR Code Generation**: `qrcode` npm library
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+---
 
-Follow these steps:
+## 📦 **Installation**
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+git clone https://github.com/yourusername/medchain.git
+cd medchain
+npm install
+npm start
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 📸 **Screenshots**
 
-**Use GitHub Codespaces**
+| Profile Menu | Dashboard |
+|--------------|-----------|
+| ![Profile Dropdown](./screenshots/profile.png) | ![Dashboard](./screenshots/dashboard.png) |
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## 📄 **License**
+This project is open-source under the MIT License.
 
-This project is built with .
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/ba53492b-2283-413f-8fe2-e7193bd673fb) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
-"# medchain-trust-tracker-v003" 
