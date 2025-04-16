@@ -62,7 +62,7 @@ const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen, activeTa
       { label: 'Verify Batch', icon: <Shield className="h-5 w-5" />, id: 'verify' },
       { label: 'Sign Batch', icon: <FileText className="h-5 w-5" />, id: 'sign' },
       { label: 'Manage Batch', icon: <BarChart className="h-5 w-5" />, id: 'manage' },
-      { label: 'Report Fake', icon: <ClipboardCheck className="h-5 w-5" />, id: 'report' }
+      // { label: 'Report Fake', icon: <ClipboardCheck className="h-5 w-5" />, id: 'report' }
     );
   }
 
