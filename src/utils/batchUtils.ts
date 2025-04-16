@@ -48,7 +48,7 @@ export const getVerifiedBatches = (
     return batches.filter(batch => batch.manufacturerName === user.name);
   }
   
-  const roleOrder: UserRole[] = ['manufacturer', 'wholesaler', 'distributor', 'retailer', 'consumer'];
+  const roleOrder: UserRole[] = ['manufacturer', 'distributor', 'wholesaler', 'retailer', 'consumer'];
   const userRoleIndex = roleOrder.indexOf(user.role);
   
   if (userRoleIndex <= 0) return [];
