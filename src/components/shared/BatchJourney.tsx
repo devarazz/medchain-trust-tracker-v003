@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-
+import jsPDF from 'jspdf';
 interface BatchJourneyProps {
   batch: Batch;
 }
@@ -32,8 +32,39 @@ const BatchJourney: React.FC<BatchJourneyProps> = ({ batch }) => {
     consumer: <User className="h-5 w-5" />,
   };
   
-  const handleDownloadCertificate = () => {
-    // In a real app, this would generate a proper certificate
+  // const handleDownloadCertificate = () => {
+  //   // In a real app, this would generate a proper certificate
+  //   const certificateData = {
+  //     batchId: batch.id,
+  //     medicineName: batch.medicineName,
+  //     manufacturingDate: batch.manufacturingDate,
+  //     expiryDate: batch.expiryDate,
+  //     manufacturerName: batch.manufacturerName,
+  //     signatures: batch.signatures,
+  //   };
+    
+  //   const certificateJSON = JSON.stringify(certificateData, null, 2);
+  //   const blob = new Blob([certificateJSON], { type: 'application/json' });
+  //   const url = URL.createObjectURL(blob);
+    
+  //   const a = document.createElement('a');
+  //   a.href = url;
+  //   a.download = `certificate-${batch.id}.json`;
+  //   a.click();
+    
+  //   URL.revokeObjectURL(url);
+  // };
+
+  
+// Your component code...
+
+const handleDownloadCertificate = () => {
+  // Import jsPDF dynamically if not already imported in your component
+  import('jspdf').then(({ default: jsPDF }) => {
+    // Create a new PDF document
+    const doc = new jsPDF();
+    
+    // Certificate data
     const certificateData = {
       batchId: batch.id,
       medicineName: batch.medicineName,
@@ -43,17 +74,35 @@ const BatchJourney: React.FC<BatchJourneyProps> = ({ batch }) => {
       signatures: batch.signatures,
     };
     
-    const certificateJSON = JSON.stringify(certificateData, null, 2);
-    const blob = new Blob([certificateJSON], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
+    // Add title
+    doc.setFontSize(22);
+    doc.text('Medicine Batch Certificate', 105, 20, { align: 'center' });
     
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `certificate-${batch.id}.json`;
-    a.click();
+    // Add content
+    doc.setFontSize(12);
+    doc.text(`Batch ID: ${certificateData.batchId}`, 20, 40);
+    doc.text(`Medicine: ${certificateData.medicineName}`, 20, 50);
+    doc.text(`Manufacturing Date: ${certificateData.manufacturingDate}`, 20, 60);
+    doc.text(`Expiry Date: ${certificateData.expiryDate}`, 20, 70);
+    doc.text(`Manufacturer: ${certificateData.manufacturerName}`, 20, 80);
     
-    URL.revokeObjectURL(url);
-  };
+    // Add signature information if available
+    if (certificateData.signatures && certificateData.signatures.length > 0) {
+      doc.text('Signatures:', 20, 100);
+      certificateData.signatures.forEach((signature, index) => {
+        doc.text(` ${signature.role}`, 30, 110 + (index * 10));
+      });
+    }
+    
+    // Add footer with date
+    const today = new Date().toLocaleDateString();
+    doc.setFontSize(10);
+    doc.text(`Certificate generated on ${today}`, 105, 280, { align: 'center' });
+    
+    // Save the PDF
+    doc.save(`certificate-${certificateData.batchId}.pdf`);
+  });
+};
   
   // Generate a fake blockchain hash for display
   const generateBlockchainHash = (batchId: string) => {

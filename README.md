@@ -1,60 +1,54 @@
-# MedChain - Blockchain-Based Medical Supply Chain System
+# React + TypeScript + Vite
 
-MedChain is a decentralized, blockchain-powered application designed to ensure transparency, authenticity, and traceability across the pharmaceutical supply chain. The platform features role-based login for each stakeholder involved—from Manufacturer to Consumer.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
----
+Currently, two official plugins are available:
 
-## 🚀 **Features**
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-### 🔐 Role-Based Access:
-- **Manufacturer**: Register and certify medicine batches.
-- **Distributor**: Verify and sign batches after validation.
-- **Wholesaler**: Double-check and sign after distributor.
-- **Retailer**: Final verification before selling to consumers.
-- **Consumer**: Verify authenticity of medicines and download certificates.
+## Expanding the ESLint configuration
 
----
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-## 🖥️ **User Interface**
-
-The system includes a clean UI with:
-- Profile dropdown menu with user info and options (as seen in the image):
-  - Username & email
-  - Profile
-  - Settings
-  - Sign out
-
----
-
-## 🧪 **Tech Stack**
-- **Frontend**: React.js / HTML / CSS (TailwindCSS recommended)
-- **Backend**: Node.js / Express.js
-- **Blockchain**: Ethereum / Hyperledger Fabric
-- **Smart Contracts**: Solidity
-- **Database**: MongoDB / IPFS for off-chain storage
-- **QR Code Generation**: `qrcode` npm library
-
----
-
-## 📦 **Installation**
-
-```bash
-git clone https://github.com/yourusername/medchain.git
-cd medchain
-npm install
-npm start
+```js
+export default tseslint.config({
+  extends: [
+    // Remove ...tseslint.configs.recommended and replace with this
+    ...tseslint.configs.recommendedTypeChecked,
+    // Alternatively, use this for stricter rules
+    ...tseslint.configs.strictTypeChecked,
+    // Optionally, add this for stylistic rules
+    ...tseslint.configs.stylisticTypeChecked,
+  ],
+  languageOptions: {
+    // other options...
+    parserOptions: {
+      project: ['./tsconfig.node.json', './tsconfig.app.json'],
+      tsconfigRootDir: import.meta.dirname,
+    },
+  },
+})
 ```
 
----
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-## 📸 **Screenshots**
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
 
-| Profile Menu | Dashboard |
-|--------------|-----------|
-| ![Profile Dropdown](./screenshots/profile.png) | ![Dashboard](./screenshots/dashboard.png) |
-
----
-
-## 📄 **License**
-This project is open-source under the MIT License.
-
+export default tseslint.config({
+  plugins: {
+    // Add the react-x and react-dom plugins
+    'react-x': reactX,
+    'react-dom': reactDom,
+  },
+  rules: {
+    // other rules...
+    // Enable its recommended typescript rules
+    ...reactX.configs['recommended-typescript'].rules,
+    ...reactDom.configs.recommended.rules,
+  },
+})
+```
