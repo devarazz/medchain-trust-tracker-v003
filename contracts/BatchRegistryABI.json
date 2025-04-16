@@ -1,0 +1,125 @@
+[
+    {
+      "inputs": [
+        {"name": "batchId", "type": "string"},
+        {"name": "reason", "type": "string"}
+      ],
+      "name": "flagBatch",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getAllBatchIds",
+      "outputs": [{"name": "", "type": "string[]"}],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [{"name": "batchId", "type": "string"}],
+      "name": "getBatch",
+      "outputs": [
+        {
+          "components": [
+            {"name": "medicineName", "type": "string"},
+            {"name": "manufacturer", "type": "string"},
+            {"name": "expiryDate", "type": "string"},
+            {"name": "status", "type": "uint8"},
+            {
+              "components": [
+                {"name": "role", "type": "string"},
+                {"name": "organizationName", "type": "string"},
+                {"name": "userName", "type": "string"},
+                {"name": "timestamp", "type": "uint256"}
+              ],
+              "name": "signatures",
+              "type": "tuple[]"
+            },
+            {"name": "creator", "type": "address"},
+            {"name": "createdAt", "type": "uint256"},
+            {"name": "exists", "type": "bool"}
+          ],
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [{"name": "batchId", "type": "string"}],
+      "name": "getSignatures",
+      "outputs": [
+        {
+          "components": [
+            {"name": "role", "type": "string"},
+            {"name": "organizationName", "type": "string"},
+            {"name": "userName", "type": "string"},
+            {"name": "timestamp", "type": "uint256"}
+          ],
+          "name": "",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {"name": "batchId", "type": "string"},
+        {"name": "medicineName", "type": "string"},
+        {"name": "manufacturer", "type": "string"},
+        {"name": "expiryDate", "type": "string"},
+        {"name": "role", "type": "string"},
+        {"name": "organizationName", "type": "string"},
+        {"name": "userName", "type": "string"}
+      ],
+      "name": "registerBatch",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {"name": "batchId", "type": "string"},
+        {"name": "role", "type": "string"},
+        {"name": "organizationName", "type": "string"},
+        {"name": "userName", "type": "string"}
+      ],
+      "name": "signBatch",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {"indexed": false, "name": "batchId", "type": "string"},
+        {"indexed": false, "name": "medicineName", "type": "string"},
+        {"indexed": false, "name": "creator", "type": "address"}
+      ],
+      "name": "BatchRegistered",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {"indexed": false, "name": "batchId", "type": "string"},
+        {"indexed": false, "name": "role", "type": "string"},
+        {"indexed": false, "name": "userName", "type": "string"}
+      ],
+      "name": "BatchSigned",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {"indexed": false, "name": "batchId", "type": "string"},
+        {"indexed": false, "name": "reason", "type": "string"}
+      ],
+      "name": "BatchFlagged",
+      "type": "event"
+    }
+  ]
+  
