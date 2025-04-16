@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 
 const RegisterBatchForm: React.FC = () => {
   const { user } = useAuth();
-  const { registerBatch } = useBatch();
+  const { registerBatch,refreshBatches } = useBatch();
   const { toast } = useToast();
   
   const [medicineName, setMedicineName] = useState('');
@@ -82,6 +82,7 @@ const RegisterBatchForm: React.FC = () => {
       });
     } finally {
       setIsSubmitting(false);
+      refreshBatches()
     }
   };
 
