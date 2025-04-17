@@ -31,6 +31,7 @@ const LoginForm: React.FC = () => {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [loginMethod, setLoginMethod] = useState<'credentials' | 'metamask'>('credentials');
+  const [metamaskUsername, setMetamaskUsername] = useState('');
 
   // Check if MetaMask is installed
   const isMetaMaskInstalled = () => {
@@ -117,17 +118,21 @@ const LoginForm: React.FC = () => {
         return;
       }
 
+      if (!metamaskUsername.trim()) {
+        setError('Please enter your name');
+        return;
+      }
+
       try {
         // Sign a message to verify ownership of the wallet
-        const message = `Login to MedChain as ${role}: ${new Date().toISOString()}`;
+        const message = `Login to MedChain as ${metamaskUsername} (${role}): ${new Date().toISOString()}`;
         const signature = await window.ethereum.request({
           method: 'personal_sign',
           params: [message, walletAddress]
         });
 
-        // Send the signature, address and role to your backend
-        // This is where you would integrate with your authentication system
-        await login(walletAddress, signature, role, true);
+        // Send the signature, address, username and role to your backend
+        await login(walletAddress, signature, role, true, metamaskUsername);
       } catch (err) {
         setError('MetaMask authentication failed');
         console.error(err);
@@ -195,51 +200,64 @@ const LoginForm: React.FC = () => {
                   </div>
                 </>
               ) : (
-                <div className="space-y-2">
-                  <Label>MetaMask Wallet</Label>
-                  {walletAddress ? (
-                    <div className="flex items-center justify-between p-2 border rounded-md bg-primary/5">
-                      <span className="text-sm font-mono truncate">
-                        {`${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 4)}`}
-                      </span>
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="metamask-username">Wallet Name</Label>
+                    <Input
+                      id="metamask-username"
+                      type="text"
+                      placeholder="Enter your name"
+                      value={metamaskUsername}
+                      onChange={(e) => setMetamaskUsername(e.target.value)}
+                      className="input-field"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>MetaMask Wallet</Label>
+                    {walletAddress ? (
+                      <div className="flex items-center justify-between p-2 border rounded-md bg-primary/5">
+                        <span className="text-sm font-mono truncate">
+                          {`${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 4)}`}
+                        </span>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            disconnectWallet();
+                            connectWallet(); // Prompt to connect again
+                          }}
+                        >
+                          Change
+                        </Button>
+                      </div>
+                    ) : (
                       <Button 
                         type="button" 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          disconnectWallet();
-                          connectWallet(); // Prompt to connect again
-                        }}
+                        className="w-full"
+                        onClick={connectWallet}
+                        disabled={isConnecting}
                       >
-                        Change
+                        {isConnecting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Connecting...
+                          </>
+                        ) : (
+                          'Connect MetaMask'
+                        )}
                       </Button>
-                    </div>
-                  ) : (
-                    <Button 
-                      type="button" 
-                      className="w-full"
-                      onClick={connectWallet}
-                      disabled={isConnecting}
-                    >
-                      {isConnecting ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Connecting...
-                        </>
-                      ) : (
-                        'Connect MetaMask'
-                      )}
-                    </Button>
-                  )}
-                  
-                  {!isMetaMaskInstalled() && (
-                    <Alert variant="destructive" className="mt-2">
-                      <AlertTriangle className="h-4 w-4" />
-                      <AlertDescription>
-                        MetaMask extension not detected. Please install MetaMask from <a href="https://metamask.io/" target="_blank" rel="noopener noreferrer" className="underline">metamask.io</a>
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                </div>
+                    )}
+                    
+                    {!isMetaMaskInstalled() && (
+                      <Alert variant="destructive" className="mt-2">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                          MetaMask extension not detected. Please install MetaMask from <a href="https://metamask.io/" target="_blank" rel="noopener noreferrer" className="underline">metamask.io</a>
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+                </>
               )}
 
               <div className="space-y-2">

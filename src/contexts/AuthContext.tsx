@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export type UserRole = 'manufacturer' | 'wholesaler' | 'distributor' | 'retailer' | 'consumer';
@@ -9,12 +8,19 @@ interface User {
   role: UserRole;
   name: string;
   organization?: string;
+  walletAddress?: string; // Add wallet address for MetaMask users
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (username: string, password: string, role: UserRole) => Promise<void>;
+  login: (
+    usernameOrWallet: string, 
+    passwordOrSignature: string, 
+    role: UserRole, 
+    isMetaMask?: boolean,
+    displayName?: string
+  ) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -34,21 +40,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
-  // In a real app, this would validate credentials with an API
-  const login = async (username: string, password: string, role: UserRole) => {
+  // Unified login function that handles both credential and MetaMask logins
+  const login = async (
+    usernameOrWallet: string, 
+    passwordOrSignature: string, 
+    role: UserRole, 
+    isMetaMask = false,
+    displayName?: string
+  ) => {
     setIsLoading(true);
     
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Mock user data
-    const newUser: User = {
-      id: Math.random().toString(36).substring(2, 9),
-      username,
-      role,
-      name: username, // In a real app, this would come from the API
-      organization: `${role.charAt(0).toUpperCase() + role.slice(1)} Inc.`,
-    };
+    let newUser: User;
+    
+    if (isMetaMask) {
+      // Handle MetaMask login
+      // In a real app, you would verify the signature on your backend
+      
+      // Use wallet address as ID and username
+      const walletAddress = usernameOrWallet;
+      const signature = passwordOrSignature;
+      const name = displayName || 'Anonymous User'; // Use provided name or default
+      
+      newUser = {
+        id: walletAddress,
+        username: `wallet_${walletAddress.substring(0, 8)}`, // Create username from wallet address
+        role,
+        name, // Use the display name provided
+        organization: `${role.charAt(0).toUpperCase() + role.slice(1)} Inc.`,
+        walletAddress, // Store the full wallet address
+      };
+    } else {
+      // Handle credential login (original implementation)
+      newUser = {
+        id: Math.random().toString(36).substring(2, 9),
+        username: usernameOrWallet,
+        role,
+        name: usernameOrWallet, // In a real app, this would come from the API
+        organization: `${role.charAt(0).toUpperCase() + role.slice(1)} Inc.`,
+      };
+    }
     
     setUser(newUser);
     localStorage.setItem('medchain_user', JSON.stringify(newUser));

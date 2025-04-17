@@ -3,8 +3,8 @@ import Web3 from 'web3';
 import { useAuth, UserRole } from './AuthContext'; // Assuming you have this context
 
 // Import the contract ABI and address (you would need to create these files)
-import BatchRegistryABI from "/home/arjun-rishi/medchain-trust-tracker-v003/contracts/BatchRegistryABI.json"
-import { contractAddress } from '/home/arjun-rishi/medchain-trust-tracker-v003/contracts/config.js';
+import BatchRegistryABI from "D:/Final Year Project/medchain-trust-tracker-v002/contracts/BatchRegistryABI.json"
+import { contractAddress } from 'D:/Final Year Project/medchain-trust-tracker-v002/contracts/config.js';
 import { Batch } from '@/types/batch';
 
 const BatchContext = createContext(undefined);
