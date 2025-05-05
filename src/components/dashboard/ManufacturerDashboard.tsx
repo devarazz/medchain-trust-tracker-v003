@@ -20,7 +20,7 @@ const ManufacturerDashboard: React.FC<ManufacturerDashboardProps> = ({ activeTab
   useEffect(() => {
     setLocalActiveTab(activeTab);
   }, [activeTab]);
-
+  console.log("bloackcain : ",batches)
   // Filter batches created by this manufacturer
   const manufacturerBatches = batches.filter(
     batch => batch.manufacturerName === user?.name

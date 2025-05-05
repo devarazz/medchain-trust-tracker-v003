@@ -63,8 +63,9 @@ const BatchList: React.FC<BatchListProps> = ({
     setSelectedBatch(null);
   };
   
-  const handleSignBatch = (batchId: string) => {
-    signBatch(batchId);
+  const handleSignBatch = async (batchId: string) => {
+    await signBatch(batchId);
+    window.location.reload();
   };
   
   const handleReportBatch = (batchId: string) => {
