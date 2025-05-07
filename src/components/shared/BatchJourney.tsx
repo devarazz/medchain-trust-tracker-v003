@@ -19,6 +19,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import jsPDF from 'jspdf';
+
 interface BatchJourneyProps {
   batch: Batch;
 }
@@ -59,8 +60,13 @@ const BatchJourney: React.FC<BatchJourneyProps> = ({ batch }) => {
 // Your component code...
 
 const handleDownloadCertificate = () => {
-  // Import jsPDF dynamically if not already imported in your component
-  import('jspdf').then(({ default: jsPDF }) => {
+  // Show loading toast
+
+  // Import libraries dynamically
+  Promise.all([
+    import('jspdf'),
+    import('qrcode')
+  ]).then(([{ default: jsPDF }, QRCode]) => {
     // Create a new PDF document
     const doc = new jsPDF();
     
@@ -68,39 +74,105 @@ const handleDownloadCertificate = () => {
     const certificateData = {
       batchId: batch.id,
       medicineName: batch.medicineName,
-      manufacturingDate: batch.manufacturingDate,
-      expiryDate: batch.expiryDate,
+      manufacturingDate: new Date(batch.manufacturingDate).toLocaleDateString(),
+      expiryDate: new Date(batch.expiryDate).toLocaleDateString(),
       manufacturerName: batch.manufacturerName,
       signatures: batch.signatures,
     };
+
+    // Add border to the certificate
+    doc.setDrawColor(0, 0, 128);
+    doc.setLineWidth(1);
+    doc.rect(10, 10, 190, 277);
+    
+    // Add decorative header
+    doc.setFillColor(0, 0, 128);
+    doc.rect(10, 10, 190, 25, 'F');
     
     // Add title
+    doc.setTextColor(255, 255, 255);
     doc.setFontSize(22);
-    doc.text('Medicine Batch Certificate', 105, 20, { align: 'center' });
+    doc.text('Blockchain Verified Medicine Certificate', 105, 25, { align: 'center' });
+    
+    // Add MedChain logo placeholder
+    doc.setDrawColor(0);
+    doc.setFillColor(255, 255, 255);
+    doc.circle(30, 22, 8, 'FD');
+    doc.setTextColor(0, 0, 128);
+    doc.setFontSize(10);
+    doc.text('MC', 30, 25, { align: 'center' });
+    
+    // Reset text color
+    doc.setTextColor(0, 0, 0);
     
     // Add content
+    doc.setFontSize(14);
+    doc.text('Product Information', 20, 50);
+    
     doc.setFontSize(12);
-    doc.text(`Batch ID: ${certificateData.batchId}`, 20, 40);
-    doc.text(`Medicine: ${certificateData.medicineName}`, 20, 50);
-    doc.text(`Manufacturing Date: ${certificateData.manufacturingDate}`, 20, 60);
-    doc.text(`Expiry Date: ${certificateData.expiryDate}`, 20, 70);
-    doc.text(`Manufacturer: ${certificateData.manufacturerName}`, 20, 80);
+    doc.text(`Batch ID: ${certificateData.batchId}`, 20, 60);
+    doc.text(`Medicine: ${certificateData.medicineName}`, 20, 70);
+    doc.text(`Manufacturing Date: ${certificateData.manufacturingDate}`, 20, 80);
+    doc.text(`Expiry Date: ${certificateData.expiryDate}`, 20, 90);
+    doc.text(`Manufacturer: ${certificateData.manufacturerName}`, 20, 100);
+    
+    // Add blockchain verification section
+    doc.setFontSize(14);
+    doc.text('Blockchain Verification', 20, 120);
+    
+    doc.setFontSize(12);
+    // doc.text(`Blockchain Status: ${certificateData.blockchainVerified ? 'Verified' : 'Pending'}`, 20, 130);
+    
+    // Format the creator address for better display
+    // const shortAddress = `${certificateData.creatorAddress.substring(0, 8)}...${certificateData.creatorAddress.substring(certificateData.creatorAddress.length - 6)}`;
+    // doc.text(`Creator Address: ${shortAddress}`, 20, 140);
     
     // Add signature information if available
     if (certificateData.signatures && certificateData.signatures.length > 0) {
-      doc.text('Signatures:', 20, 100);
+      doc.setFontSize(14);
+      doc.text('Supply Chain Signatures', 20, 160);
+      
+      doc.setFontSize(12);
       certificateData.signatures.forEach((signature, index) => {
-        doc.text(` ${signature.role}`, 30, 110 + (index * 10));
+        const role = signature.role.charAt(0).toUpperCase() + signature.role.slice(1);
+        const date = new Date(signature.timestamp).toLocaleDateString();
+        doc.text(`${role}: ${signature.userName} (${signature.organizationName})`, 30, 170 + (index * 10));
+        doc.text(`Verified on: ${date}`, 40, 175 + (index * 10));
       });
     }
-    
-    // Add footer with date
-    const today = new Date().toLocaleDateString();
-    doc.setFontSize(10);
-    doc.text(`Certificate generated on ${today}`, 105, 280, { align: 'center' });
-    
-    // Save the PDF
-    doc.save(`certificate-${certificateData.batchId}.pdf`);
+
+    // Generate QR code for batch ID
+    QRCode.toDataURL(certificateData.batchId, { errorCorrectionLevel: 'H' })
+      .then(url => {
+        // Add QR code to the PDF
+        doc.addImage(url, 'PNG', 75, 210, 60, 60);
+        
+        // Add QR code caption
+        doc.setFontSize(10);
+        doc.text('Scan to verify authenticity', 105, 275, { align: 'center' });
+        
+        // Add footer with date and verification instruction
+        const today = new Date().toLocaleDateString();
+        doc.setFontSize(8);
+        doc.text(`Certificate generated on ${today}`, 105, 280, { align: 'center' });
+        doc.text('Verify this certificate at medchain.example.com', 105, 285, { align: 'center' });
+        
+        // Save the PDF
+        doc.save(`certificate-${certificateData.batchId}.pdf`);
+        
+        // Show success toast
+        // toast.dismiss();
+        // toast.success("Certificate downloaded successfully");
+      })
+      .catch(err => {
+        console.error("Error generating QR code:", err);
+        // toast.dismiss();
+        // toast.error("Failed to generate QR code for certificate");
+      });
+  }).catch(err => {
+    console.error("Error loading libraries:", err);
+    // toast.dismiss();
+    // toast.error("Failed to generate certificate");
   });
 };
   

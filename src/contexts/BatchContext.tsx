@@ -1,11 +1,41 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import Web3 from 'web3';
-import { useAuth, UserRole } from './AuthContext'; // Assuming you have this context
+import { useAuth, UserRole } from './AuthContext';
+import { initializeApp } from 'firebase/app';
+import { 
+  getDatabase,
+  ref,
+  set,
+  get,
+  push,
+  update,
+  child,
+  query,
+  orderByChild,
+  equalTo,
+  onValue
+} from 'firebase/database';
 
-// Import the contract ABI and address (you would need to create these files)
+// Import the contract ABI and address
 import BatchRegistryABI from "../../contracts/BatchRegistryABI.json"
 import { contractAddress } from '../../contracts/config.js';
 import { Batch } from '@/types/batch';
+
+// Firebase configuration - should be in an env file in production
+const firebaseConfig = {
+  apiKey: "AIzaSyByYYFUMM-q5UhgGpurAXxN14i4VWSqeVw",
+  authDomain: "medchain-3a22f.firebaseapp.com",
+  projectId: "medchain-3a22f",
+  storageBucket: "medchain-3a22f.firebasestorage.app",
+  messagingSenderId: "454135776190",
+  appId: "1:454135776190:web:2d3dd591891f56091aafef",
+  measurementId: "G-BP9H6GTVJW",
+  databaseURL: "https://medchain-3a22f-default-rtdb.firebaseio.com" // Add this line for Realtime Database
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
 
 const BatchContext = createContext(undefined);
 
@@ -47,62 +77,66 @@ export const BatchProvider = ({ children }) => {
     initWeb3();
   }, []);
 
-  // Load batches from blockchain
+  // Load batches from both blockchain and Firebase Realtime Database
   useEffect(() => {
-    const loadBatchesFromBlockchain = async () => {
-      if (!batchContract) return;
-      
+    const loadBatches = async () => {
+      setIsLoading(true);
       try {
-        console.log("batchContract: ",batchContract)
-        setIsLoading(true);
-        const batchIds = await batchContract.methods.getAllBatchIds().call();
+        // Load from blockchain
+        const blockchainBatches = await loadBatchesFromBlockchain();
         
-        const batchPromises = batchIds.map(id => 
-          batchContract.methods.getBatch(id).call()
-        );
+        // Load from Firebase Realtime Database
+        const firebaseBatches = await loadBatchesFromFirebase();
         
-        const batchesData = await Promise.all(batchPromises);
+        // Merge batches giving preference to blockchain data
+        const mergedBatches = mergeBatchData(blockchainBatches, firebaseBatches);
         
-        // Transform blockchain data into app's format
-        const formattedBatches = batchesData.map((batch, index) => {
-          const signatures = batch.signatures.map(sig => ({
-            role: sig.role,
-            timestamp: new Date(sig.timestamp * 1000).toISOString(),
-            organizationName: sig.organizationName,
-            userName: sig.userName,
-            isVerified: true
-          }));
-          
-          return {
-            id: batchIds[index],
-            medicineName: batch.medicineName,
-            manufacturer: batch.manufacturer,
-            expiryDate: batch.expiryDate,
-            status: transformStatus(batch.status),
-            signatures: signatures,
-            createdAt: new Date(batch.createdAt * 1000).toISOString(),
-            creator: batch.creator
-          };
-        });
-        
-        setBatches(formattedBatches);
+        setBatches(mergedBatches);
       } catch (error) {
-        console.error("Error loading batches from blockchain:", error);
+        console.error("Error loading batches:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    // Helper function to transform numeric status to string
-    const transformStatus = (statusCode) => {
-      const statuses = ['in-transit', 'delivered', 'flagged'];
-      return statuses[statusCode] || 'in-transit';
-    };
-
-    loadBatchesFromBlockchain();
+    if (batchContract) {
+      loadBatches();
+    }
   }, [batchContract]);
 
-  // Load notifications from localStorage (we'll keep this for now)
+  // Setup realtime listener for batches
+  useEffect(() => {
+    const batchesRef = ref(database, 'batches');
+    
+    const unsubscribe = onValue(batchesRef, async (snapshot) => {
+      if (batchContract) {
+        try {
+          // When data changes in Firebase, reload both sources and merge
+          const blockchainBatches = await loadBatchesFromBlockchain();
+          const firebaseBatches = [];
+          
+          snapshot.forEach((childSnapshot) => {
+            const batchData = childSnapshot.val();
+            firebaseBatches.push({
+              ...batchData,
+              id: childSnapshot.key,
+              source: 'firebase'
+            });
+          });
+          
+          const mergedBatches = mergeBatchData(blockchainBatches, firebaseBatches);
+          setBatches(mergedBatches);
+        } catch (error) {
+          console.error("Error updating batches in real-time:", error);
+        }
+      }
+    });
+    
+    // Cleanup listener on unmount
+    return () => unsubscribe();
+  }, [batchContract]);
+
+  // Load notifications from localStorage
   useEffect(() => {
     const storedNotifications = localStorage.getItem('medchain_notifications');
     if (storedNotifications) {
@@ -117,312 +151,337 @@ export const BatchProvider = ({ children }) => {
     }
   }, [batchNotifications]);
 
-  const registerBatch = async (batchData) => {
-    if (!user || !batchContract || !web3) return;
+  // Helper function to load batches from blockchain
+  const loadBatchesFromBlockchain = async () => {
+    if (!batchContract) return [];
     
     try {
-      const batchId = generateBatchId();
-      
-      // Get current account
-      const accounts = await web3.eth.getAccounts();
-      const currentAccount = accounts[0];
-      console.log("current: ", currentAccount, accounts);
-      
-      // Extract and validate all required fields
-      const medicineName = batchData.medicineName || "Unknown Medicine";
-      const manufacturingDate = batchData.manufacturingDate || new Date().toISOString().split('T')[0];
-      const expiryDate = batchData.expiryDate || "Unknown";
-      const quantity = batchData.quantity || 0;
-      const manufacturerName = batchData.manufacturerName || "Unknown Manufacturer";
-      const role = user.role || "Unknown Role";
-      const organization = user.organization || "Unknown Organization";
-      const userName = user.name || "Unknown User";
-      
-      // Log parameters for debugging
-      console.log("Registering batch with params:", {
-        batchId,
-        medicineName,
-        manufacturingDate,
-        expiryDate,
-        quantity,
-        manufacturerName,
-        role,
-        organization,
-        userName
-      });
-      
-      // Call updated smart contract method with new parameters
-      await batchContract.methods.registerBatch(
-        batchId,
-        medicineName,
-        manufacturingDate,
-        expiryDate,
-        quantity,
-        manufacturerName,
-        role,
-        organization,
-        userName
-      ).send({ from: currentAccount });
-      
-      // After blockchain confirmation, refresh batch from blockchain
-      const newBatch = await batchContract.methods.getBatch(batchId).call();
-      
-      // Format the new batch for our app's state according to updated interface
-      const formattedBatch = {
-        id: batchId,
-        medicineName: newBatch.medicineName,
-        manufacturingDate: newBatch.manufacturingDate,
-        expiryDate: newBatch.expiryDate,
-        quantity: parseInt(newBatch.quantity),
-        manufacturerName: newBatch.manufacturerName,
-        status: 'registered', // Default status is now 'registered'
-        signatures: [{
-          role: user.role,
-          timestamp: new Date().toISOString(),
-          organizationName: user.organization || 'Unknown Organization',
-          userName: user.name,
-          isVerified: true
-        }],
-        createdAt: new Date(parseInt(newBatch.createdAt) * 1000).toISOString(),
-        creator: currentAccount
-      };
-      
-      // Update local state
-      setBatches(prevBatches => [...prevBatches, formattedBatch]);
-      console.log("New batch created:", formattedBatch);
-      
-      // Add notification
-      addNotification(`New batch ${batchId} for ${formattedBatch.medicineName} registered`, batchId);
-      
-      return batchId;
-    } catch (error) {
-      console.error("Error registering batch on blockchain:", error);
-      addNotification(`Error registering batch: ${error.message}`, null);
-    }
-  };
-  
-  // Helper function to transform status code to string based on updated enum
-  const transformStatus = (statusCode) => {
-    const statuses = ['registered', 'in-transit', 'delivered', 'flagged'];
-    return statuses[statusCode] || 'registered';
-  };
-  
-  // Helper function to transform blockchain batch data to app format
-  const transformBatchData = (blockchainBatch, batchId) => {
-    return {
-      id: batchId,
-      medicineName: blockchainBatch.medicineName,
-      manufacturingDate: blockchainBatch.manufacturingDate,
-      expiryDate: blockchainBatch.expiryDate,
-      quantity: parseInt(blockchainBatch.quantity),
-      manufacturerName: blockchainBatch.manufacturerName,
-      status: transformStatus(parseInt(blockchainBatch.status)),
-      signatures: blockchainBatch.signatures.map(sig => ({
-        role: sig.role,
-        timestamp: new Date(parseInt(sig.timestamp) * 1000).toISOString(),
-        organizationName: sig.organizationName,
-        userName: sig.userName,
-        isVerified: true
-      })),
-      createdAt: new Date(parseInt(blockchainBatch.createdAt) * 1000).toISOString(),
-      creator: blockchainBatch.creator
-    };
-  };
-  
-  // Updated function to get all batches
-  const getAllBatchData = async () => {
-    if (!batchContract || !web3) {
-      console.error("Web3 or contract not initialized");
-      return [];
-    }
-    
-    try {
-      // Get all batch IDs
       const batchIds = await batchContract.methods.getAllBatchIds().call();
-      console.log("Retrieved batch IDs:", batchIds);
       
-      // Get detailed data for each batch
       const batchPromises = batchIds.map(id => 
         batchContract.methods.getBatch(id).call()
       );
       
-      // Wait for all promises to resolve
       const batchesData = await Promise.all(batchPromises);
       
       // Transform blockchain data into app's format
-      const formattedBatches = batchesData.map((batch, index) => 
-        transformBatchData(batch, batchIds[index])
-      );
+      const formattedBatches = batchesData.map((batch, index) => {
+        const signatures = batch.signatures.map(sig => ({
+          role: sig.role,
+          timestamp: new Date(sig.timestamp * 1000).toISOString(),
+          organizationName: sig.organizationName,
+          userName: sig.userName,
+          isVerified: true
+        }));
+        
+        return {
+          id: batchIds[index],
+          medicineName: batch.medicineName,
+          manufacturingDate: batch.manufacturingDate,
+          expiryDate: batch.expiryDate,
+          quantity: parseInt(batch.quantity),
+          manufacturerName: batch.manufacturerName,
+          status: transformStatus(batch.status),
+          signatures: signatures,
+          createdAt: new Date(batch.createdAt * 1000).toISOString(),
+          creator: batch.creator,
+          source: 'blockchain'
+        };
+      });
       
-      console.log("Formatted batch data:", formattedBatches);
       return formattedBatches;
     } catch (error) {
-      console.error("Error fetching batch data from blockchain:", error);
+      console.error("Error loading batches from blockchain:", error);
       return [];
     }
   };
-  // const registerBatch = async (batchData) => {
-  //   if (!user || !batchContract || !web3) return;
+
+  // Helper function to load batches from Firebase Realtime Database
+  const loadBatchesFromFirebase = async () => {
+    try {
+      const batchesRef = ref(database, 'batches');
+      const snapshot = await get(batchesRef);
+      
+      const firebaseBatches = [];
+      if (snapshot.exists()) {
+        snapshot.forEach((childSnapshot) => {
+          const batchData = childSnapshot.val();
+          firebaseBatches.push({
+            ...batchData,
+            id: childSnapshot.key,
+            source: 'firebase'
+          });
+        });
+      }
+      
+      return firebaseBatches;
+    } catch (error) {
+      console.error("Error loading batches from Firebase:", error);
+      return [];
+    }
+  };
+
+  // Helper function to merge batch data from both sources
+  const mergeBatchData = (blockchainBatches, firebaseBatches) => {
+    const batchMap = new Map();
     
-  //   try {
-  //     const batchId = generateBatchId(); // You'll need to implement this function
-      
-  //     // Get current account
-  //     const accounts = await web3.eth.getAccounts();
-  //     const currentAccount = accounts[0];
-  //     console.log("current: ",currentAccount,accounts);
-      
-  //     const manufacturer = batchData.manufacturer || "Unknown Manufacturer";
-  //     const medicineName = batchData.medicineName || "Unknown Medicine";
-  //     const expiryDate = batchData.expiryDate || "Unknown";
-  //     const role = user.role || "Unknown Role";
-  //     const organization = user.organization || "Unknown Organization";
-  //     const userName = user.name || "Unknown User";
-  //     // Call smart contract method
-  //     console.log("Registering batch with params:", {
-  //       batchId,
-  //       medicineName,
-  //       manufacturer,
-  //       expiryDate,
-  //       role,
-  //       organization,
-  //       userName
-  //   });
+    // First, add all blockchain batches
+    blockchainBatches.forEach(batch => {
+      batchMap.set(batch.id, batch);
+    });
     
-  //     await batchContract.methods.registerBatch(
-  //       batchId,
-  //       medicineName,
-  //       manufacturer,
-  //       expiryDate,
-  //       role,
-  //       organization,
-  //       userName
-  //   ).send({ from: currentAccount });
-      
-  //     // After blockchain confirmation, refresh batches from blockchain
-  //     const newBatch = await batchContract.methods.getBatch(batchId).call();
-      
-  //     // Format the new batch for our app's state
-  //     const formattedBatch = {
-  //       id: batchId,
-  //       medicineName: newBatch.medicineName,
-  //       manufacturer: newBatch.manufacturer,
-  //       expiryDate: newBatch.expiryDate,
-  //       status: 'in-transit',
-  //       signatures: [{
-  //         role: user.role,
-  //         timestamp: new Date().toISOString(),
-  //         organizationName: user.organization || 'Unknown Organization',
-  //         userName: user.name,
-  //         isVerified: true
-  //       }],
-  //       createdAt: new Date().toISOString(),
-  //       creator: currentAccount
-  //     };
-      
-  //     // Update local state
-  //     setBatches(prevBatches => [...prevBatches, formattedBatch]);
-  //     console.log("batches: ",newBatch);
-  //     // Add notification
-  //     addNotification(`New batch ${batchId} for ${formattedBatch.medicineName} registered`, batchId);
-      
-  //     return batchId;
-  //   } catch (error) {
-  //     console.error("Error registering batch on blockchain:", error);
-  //     addNotification(`Error registering batch: ${error.message}`, null);
-  //   }
-  // };
-  
-  const signBatch = async (batchId) => {
-    if (!user || !batchContract || !web3) return;
+    // Then, add Firebase batches only if they don't exist in blockchain
+    firebaseBatches.forEach(batch => {
+      if (!batchMap.has(batch.id)) {
+        batchMap.set(batch.id, batch);
+      }
+    });
+    
+    return Array.from(batchMap.values());
+  };
+
+  const registerBatch = async (batchData) => {
+    if (!user) return;
     
     try {
-      // Get current account
-      const accounts = await web3.eth.getAccounts();
-      const currentAccount = accounts[0];
+      const batchId = generateBatchId();
       
-      // Call smart contract method
-      await batchContract.methods.signBatch(
-        batchId,
-        user.role,
-        user.organization || 'Unknown Organization',
-        user.name
-      ).send({ from: currentAccount });
+      // Create batch object
+      const timestamp = new Date().toISOString();
+      const newBatch = {
+        id: batchId,
+        medicineName: batchData.medicineName || "Unknown Medicine",
+        manufacturingDate: batchData.manufacturingDate || new Date().toISOString().split('T')[0],
+        expiryDate: batchData.expiryDate || "Unknown",
+        quantity: batchData.quantity || 0,
+        manufacturerName: batchData.manufacturerName || "Unknown Manufacturer",
+        status: 'registered', // Default status
+        signatures: [{
+          role: user.role,
+          timestamp: timestamp,
+          organizationName: user.organization || 'Unknown Organization',
+          userName: user.name,
+          isVerified: true
+        }],
+        createdAt: timestamp,
+        creator: user.id || 'unknown'
+      };
       
-      // After blockchain confirmation, refresh batch from blockchain
-      const updatedBatch = await batchContract.methods.getBatch(batchId).call();
-      const signatures = await batchContract.methods.getSignatures(batchId).call();
-      console.log("updateBatch: ",updatedBatch,signatures);
-      // Update local state
-      setBatches(prevBatches => 
-        prevBatches.map(batch => {
-          if (batch.id === batchId) {
-            // Format signatures
-            const formattedSignatures = signatures.map(sig => ({
-              role: sig.role,
-              timestamp: new Date(sig.timestamp * 1000).toISOString(),
-              organizationName: sig.organizationName,
-              userName: sig.userName,
-              isVerified: true
-            }));
-            
-            // Update batch with new signatures and status
-            return {
-              ...batch,
-              signatures: formattedSignatures,
-              status: transformStatus(updatedBatch.status)
-            };
-          }
-          return batch;
-        })
+      // Try to register on blockchain
+      let blockchainSuccess = false;
+      if (batchContract && web3) {
+        try {
+          // Get current account
+          const accounts = await web3.eth.getAccounts();
+          const currentAccount = accounts[0];
+          
+          // Call smart contract method
+          await batchContract.methods.registerBatch(
+            batchId,
+            newBatch.medicineName,
+            newBatch.manufacturingDate,
+            newBatch.expiryDate,
+            newBatch.quantity,
+            newBatch.manufacturerName,
+            user.role,
+            user.organization || 'Unknown Organization',
+            user.name
+          ).send({ from: currentAccount });
+          
+          blockchainSuccess = true;
+          console.log("Batch registered on blockchain successfully");
+        } catch (error) {
+          console.error("Error registering batch on blockchain:", error);
+          addNotification(`Blockchain registration failed, saving to Firebase only: ${error.message}`, batchId);
+        }
+      }
+      
+      // Register on Firebase Realtime Database regardless of blockchain success
+      try {
+        const batchRef = ref(database, `batches/${batchId}`);
+        await set(batchRef, {
+          ...newBatch,
+          blockchainVerified: blockchainSuccess,
+          updatedAt: new Date().toISOString() // Realtime Database doesn't have serverTimestamp()
+        });
+        console.log("Batch registered on Firebase Realtime Database successfully");
+      } catch (error) {
+        console.error("Error registering batch on Firebase:", error);
+        if (blockchainSuccess) {
+          addNotification(`Firebase backup failed but blockchain registration successful`, batchId);
+        } else {
+          addNotification(`Registration failed on both platforms: ${error.message}`, null);
+          throw error; // Re-throw if both failed
+        }
+      }
+      
+      // Update local state is handled by onValue listener
+      
+      // Add notification
+      addNotification(
+        `New batch ${batchId} for ${newBatch.medicineName} registered${blockchainSuccess ? ' on blockchain and' : ' only on'} Firebase`, 
+        batchId
       );
       
-      // addNotification(`Batch ${batchId} signed by ${user.role} ${user.name}`, batchId);
+      return batchId;
     } catch (error) {
-      console.error("Error signing batch on blockchain:", error);
-      // addNotification(`Error signing batch: ${error.message}`, batchId);
+      console.error("Error in batch registration process:", error);
+      addNotification(`Error registering batch: ${error.message}`, null);
+      throw error;
     }
+  };
+  
+  const signBatch = async (batchId) => {
+    if (!user) return;
+    
+    const batch = getBatch(batchId);
+    if (!batch) {
+      console.error("Batch not found");
+      return;
+    }
+    
+    const signatureData = {
+      role: user.role,
+      timestamp: new Date().toISOString(),
+      organizationName: user.organization || 'Unknown Organization',
+      userName: user.name,
+      isVerified: true
+    };
+    
+    // Try to sign on blockchain
+    let blockchainSuccess = false;
+    if (batchContract && web3 && batch.source !== 'firebase-only') {
+      try {
+        // Get current account
+        const accounts = await web3.eth.getAccounts();
+        const currentAccount = accounts[0];
+        
+        // Call smart contract method
+        await batchContract.methods.signBatch(
+          batchId,
+          user.role,
+          user.organization || 'Unknown Organization',
+          user.name
+        ).send({ from: currentAccount });
+        
+        blockchainSuccess = true;
+        console.log("Batch signed on blockchain successfully");
+      } catch (error) {
+        console.error("Error signing batch on blockchain:", error);
+      }
+    }
+    
+    // Sign on Firebase Realtime Database regardless of blockchain success
+    try {
+      const batchRef = ref(database, `batches/${batchId}`);
+      
+      // First check if the batch exists in Firebase
+      const snapshot = await get(batchRef);
+      
+      if (snapshot.exists()) {
+        // Get current data
+        const batchData = snapshot.val();
+        
+        // Update existing batch
+        const updatedSignatures = [...(batchData.signatures || []), signatureData];
+        const updatedStatus = getNextStatus(batchData.status, user.role);
+        
+        await update(batchRef, {
+          signatures: updatedSignatures,
+          status: updatedStatus,
+          updatedAt: new Date().toISOString(),
+          blockchainSignatureSuccess: blockchainSuccess
+        });
+      } else {
+        // Create new batch in Firebase if it only exists on blockchain
+        const updatedBatch = {
+          ...batch,
+          signatures: [...batch.signatures, signatureData],
+          status: getNextStatus(batch.status, user.role),
+          updatedAt: new Date().toISOString(),
+          blockchainSignatureSuccess: blockchainSuccess
+        };
+        
+        await set(batchRef, updatedBatch);
+      }
+      
+      console.log("Batch signed on Firebase Realtime Database successfully");
+    } catch (error) {
+      console.error("Error signing batch on Firebase:", error);
+      if (!blockchainSuccess) {
+        addNotification(`Failed to sign batch: ${error.message}`, batchId);
+        return;
+      }
+    }
+    
+    // Update local state is handled by onValue listener
+    
+    addNotification(
+      `Batch ${batchId} signed by ${user.role} ${user.name}${blockchainSuccess ? ' on blockchain and' : ' only on'} Firebase`, 
+      batchId
+    );
+  };
+  
+  const reportFakeBatch = async (batchId, reason) => {
+    if (!user) return;
+    
+    // Try to report on blockchain
+    let blockchainSuccess = false;
+    if (batchContract && web3) {
+      try {
+        // Get current account
+        const accounts = await web3.eth.getAccounts();
+        const currentAccount = accounts[0];
+        
+        // Call smart contract method
+        await batchContract.methods.flagBatch(
+          batchId,
+          reason
+        ).send({ from: currentAccount });
+        
+        blockchainSuccess = true;
+        console.log("Batch flagged on blockchain successfully");
+      } catch (error) {
+        console.error("Error flagging batch on blockchain:", error);
+      }
+    }
+    
+    // Update on Firebase Realtime Database regardless of blockchain success
+    try {
+      const batchRef = ref(database, `batches/${batchId}`);
+      
+      await update(batchRef, {
+        status: 'flagged',
+        flagReason: reason,
+        flaggedBy: {
+          role: user.role,
+          userName: user.name,
+          organizationName: user.organization || 'Unknown Organization',
+          timestamp: new Date().toISOString()
+        },
+        updatedAt: new Date().toISOString(),
+        blockchainFlagSuccess: blockchainSuccess
+      });
+      
+      console.log("Batch flagged on Firebase Realtime Database successfully");
+    } catch (error) {
+      console.error("Error flagging batch on Firebase:", error);
+      if (!blockchainSuccess) {
+        addNotification(`Failed to report batch: ${error.message}`, batchId);
+        return;
+      }
+    }
+    
+    // Update local state is handled by onValue listener
+    
+    addNotification(
+      `⚠️ Batch ${batchId} reported as potentially fake by ${user.role} ${user.name}. Reason: ${reason}`, 
+      batchId
+    );
   };
   
   const getBatch = (batchId) => {
     return batches.find(batch => batch.id === batchId);
-  };
-  
-  const reportFakeBatch = async (batchId, reason) => {
-    if (!user || !batchContract || !web3) return;
-    
-    try {
-      // Get current account
-      const accounts = await web3.eth.getAccounts();
-      const currentAccount = accounts[0];
-      
-      // Call smart contract method
-      await batchContract.methods.flagBatch(
-        batchId,
-        reason
-      ).send({ from: currentAccount });
-      
-      // After blockchain confirmation, refresh batch from blockchain
-      const updatedBatch = await batchContract.methods.getBatch(batchId).call();
-      
-      // Update local state
-      setBatches(prevBatches => 
-        prevBatches.map(batch => {
-          if (batch.id === batchId) {
-            return {
-              ...batch,
-              status: 'flagged'
-            };
-          }
-          return batch;
-        })
-      );
-      
-      addNotification(`⚠️ Batch ${batchId} reported as potentially fake by ${user.role} ${user.name}. Reason: ${reason}`, batchId);
-    } catch (error) {
-      console.error("Error reporting fake batch on blockchain:", error);
-      addNotification(`Error reporting batch: ${error.message}`, batchId);
-    }
   };
   
   const addNotification = (message, batchId) => {
@@ -433,24 +492,68 @@ export const BatchProvider = ({ children }) => {
       timestamp: new Date().toISOString(),
       read: false
     };
+    
+    // Save notification to Firebase Realtime Database
+    const notificationRef = ref(database, `notifications/${newNotification.id}`);
+    set(notificationRef, newNotification).catch(error => {
+      console.error("Error saving notification to Firebase:", error);
+    });
+    
     setBatchNotifications(prev => [newNotification, ...prev]);
   };
   
+  // Setup realtime listener for notifications
+  useEffect(() => {
+    const notificationsRef = ref(database, 'notifications');
+    
+    const unsubscribe = onValue(notificationsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const notificationsData = [];
+        snapshot.forEach((childSnapshot) => {
+          notificationsData.push(childSnapshot.val());
+        });
+        
+        // Sort by timestamp descending
+        notificationsData.sort((a, b) => 
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+        
+        setBatchNotifications(notificationsData);
+      }
+    });
+    
+    // Cleanup listener on unmount
+    return () => unsubscribe();
+  }, []);
+  
   const clearBatchNotification = (id) => {
-    setBatchNotifications(prev => 
-      prev.map(notification => 
-        notification.id === id 
-          ? { ...notification, read: true } 
-          : notification
-      )
-    );
+    // Update in Firebase Realtime Database
+    const notificationRef = ref(database, `notifications/${id}`);
+    update(notificationRef, { read: true }).catch(error => {
+      console.error("Error updating notification in Firebase:", error);
+    });
+    
+    // Local state will be updated by the onValue listener
   };
   
-  // Helper function to transform status
-  // const transformStatus = (statusCode) => {
-  //   const statuses = ['in-transit', 'delivered', 'flagged'];
-  //   return statuses[statusCode] || 'in-transit';
-  // };
+  // Helper function to transform status code to string
+  const transformStatus = (statusCode) => {
+    const statuses = ['registered', 'in-transit', 'delivered', 'flagged'];
+    return statuses[statusCode] || 'registered';
+  };
+  
+  // Helper function to determine next status based on role
+  const getNextStatus = (currentStatus, role) => {
+    if (currentStatus === 'flagged') return 'flagged';
+    
+    const statusFlow = {
+      'registered': 'in-transit',
+      'in-transit': 'delivered',
+      'delivered': 'delivered'
+    };
+    
+    return statusFlow[currentStatus] || currentStatus;
+  };
   
   // Helper function to generate a unique batch ID
   const generateBatchId = () => {
@@ -458,26 +561,17 @@ export const BatchProvider = ({ children }) => {
   };
   
   // Helper function to get verified batches
-  // const getVerifiedBatches = (allBatches, currentUser) => {
-  //   if (!currentUser) return [];
-  //   console.log("all batches: ", allBatches,currentUser);
-  //   return allBatches.filter(batch => 
-  //     batch.status !== 'flagged' && 
-  //     batch.signatures.some(sig => sig.role === currentUser.role)
-  //   );
-  // };
-
- const getVerifiedBatches = (
-    batches: Batch[],
-    user: { role: UserRole; name: string } | null
-  ): Batch[] => {
+  const getVerifiedBatches = (
+    batches,
+    user
+  ) => {
     if (!user) return [];
     
     if (user.role === 'manufacturer') {
       return batches.filter(batch => batch.manufacturerName === user.name);
     }
     
-    const roleOrder: UserRole[] = ['manufacturer','distributor', 'wholesaler', 'retailer', 'consumer'];
+    const roleOrder = ['manufacturer', 'distributor', 'wholesaler', 'retailer', 'consumer'];
     const userRoleIndex = roleOrder.indexOf(user.role);
     
     if (userRoleIndex <= 0) return [];
@@ -489,41 +583,78 @@ export const BatchProvider = ({ children }) => {
       !batch.signatures.some(sig => sig.role === user.role)
     );
   };
-  // In your BatchProvider component
-useEffect(() => {
-  const loadBatchesFromBlockchain = async () => {
-    if (batchContract) {
-      setIsLoading(true);
-      try {
-        const batches = await getAllBatchData();
-        setBatches(batches);
-      } catch (error) {
-        console.error("Failed to load batches:", error);
-      } finally {
-        setIsLoading(false);
-      }
+  
+  // Function to refresh batches from both sources
+  const refreshBatches = async () => {
+    setIsLoading(true);
+    try {
+      // Load from blockchain
+      const blockchainBatches = await loadBatchesFromBlockchain();
+      
+      // Load from Firebase
+      const firebaseBatches = await loadBatchesFromFirebase();
+      
+      // Merge batches giving preference to blockchain data
+      const mergedBatches = mergeBatchData(blockchainBatches, firebaseBatches);
+      
+      setBatches(mergedBatches);
+      return mergedBatches;
+    } catch (error) {
+      console.error("Failed to refresh batches:", error);
+      return [];
+    } finally {
+      setIsLoading(false);
     }
   };
-
-  loadBatchesFromBlockchain();
-}, [batchContract]);
-
-// Add a refresh function that can be called from the UI
-const refreshBatches = async () => {
-  setIsLoading(true);
-  try {
-    const batches = await getAllBatchData();
-    setBatches(batches);
-    return batches;
-  } catch (error) {
-    console.error("Failed to refresh batches:", error);
-    return [];
-  } finally {
-    setIsLoading(false);
-  }
-};
-  // Helper function to transform status code to string
-
+  
+  // Function to sync Firebase with blockchain data
+  const syncFirebaseWithBlockchain = async () => {
+    try {
+      // Load latest data from blockchain
+      const blockchainBatches = await loadBatchesFromBlockchain();
+      
+      // Update each batch in Firebase Realtime Database
+      for (const batch of blockchainBatches) {
+        const batchRef = ref(database, `batches/${batch.id}`);
+        await set(batchRef, {
+          ...batch,
+          blockchainVerified: true,
+          updatedAt: new Date().toISOString()
+        });
+      }
+      
+      console.log("Firebase successfully synchronized with blockchain data");
+      addNotification("Firebase database synchronized with blockchain", null);
+      
+      // Refresh batches
+      await refreshBatches();
+    } catch (error) {
+      console.error("Error synchronizing Firebase with blockchain:", error);
+      addNotification(`Error synchronizing: ${error.message}`, null);
+    }
+  };
+  
+  // Example of querying data by specific fields
+  const getBatchesByStatus = async (status) => {
+    try {
+      const batchesRef = ref(database, 'batches');
+      const statusQuery = query(batchesRef, orderByChild('status'), equalTo(status));
+      const snapshot = await get(statusQuery);
+      
+      const results = [];
+      snapshot.forEach((childSnapshot) => {
+        results.push({
+          id: childSnapshot.key,
+          ...childSnapshot.val()
+        });
+      });
+      
+      return results;
+    } catch (error) {
+      console.error(`Error getting batches with status ${status}:`, error);
+      return [];
+    }
+  };
   
   return (
     <BatchContext.Provider
@@ -539,7 +670,9 @@ const refreshBatches = async () => {
         selectedBatch,
         setSelectedBatch,
         isLoading,
-        refreshBatches
+        refreshBatches,
+        syncFirebaseWithBlockchain,
+        getBatchesByStatus, // Added new function for querying
       }}
     >
       {children}
